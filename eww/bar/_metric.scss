@@ -1,0 +1,18 @@
+.metric scale trough highlight {
+  all: unset;
+  background-color: $color_accent;
+  border-radius: 10px;
+}
+
+.metric scale trough {
+  all: unset;
+  border-radius: 50px;
+  min-height: 3px;
+  min-width: 100px;
+  margin-left: 10px;
+  margin-right: 20px;
+}
+
+.metric .label {
+  margin-left: 5px;
+}

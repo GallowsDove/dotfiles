@@ -1,0 +1,129 @@
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "Inconsolata";
+    font-size: 15.3px;
+    min-height: 0;
+}
+
+window#waybar {
+    background: transparent;
+    color: white;
+	margin-left: 4px;
+	margin-right: 4px;
+	margin-top: 4px;
+}
+
+#window {
+    font-weight: bold;
+    font-family: "Ubuntu";
+}
+
+#mode {
+    background: #64727D;
+    border-bottom: 3px solid white;
+}
+
+#taskbar {
+    margin-left: 4px;
+}
+
+#taskbar button {
+    color: #f0f0ff;
+    background-color: rgba(30, 30, 46, 0.0);
+}
+
+#taskbar button:hover {
+    background-color: rgba(49, 50, 68, 0.6);
+}
+
+#taskbar button.active {
+    background-color: rgba(88, 91, 112, 0.6);
+}
+
+#taskbar button.active:hover {
+    background-color: rgba(108, 112, 134, 0.6);
+}
+
+#clock, #battery, #cpu, #memory, #network, #pulseaudio, #tray, #mode, #mpris {
+    padding: 0 5px;
+    margin: 0 4px;
+}
+
+#custom-lock, #custom-logout, #custom-poweroff {
+	padding: 0 4px;
+	margin: 0 3px;
+}
+
+#workspaces button {
+	padding: 10px 7px;
+}
+
+#clock {
+    font-weight: bold;
+}
+
+#battery {
+}
+
+#battery icon {
+    color: red;
+}
+
+@keyframes blink {
+    to {
+        background-color: #ffffff;
+        color: black;
+    }
+}
+
+#cpu {
+}
+
+#memory {
+}
+
+#network {
+}
+
+#network.disconnected {
+    background: #f53c3c;
+}
+
+#pulseaudio {
+}
+
+#pulseaudio.muted {
+}
+
+#pulseaudio-slider slider {
+    min-height: 0px;
+    min-width: 0px;
+    opacity: 0;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+}
+
+#pulseaudio-slider trough {
+    min-height: 6px;
+    min-width: 80px;
+    border-radius: 5px;
+    background-color: #282A36;
+}
+
+#pulseaudio-slider highlight {
+    min-width: 10px;
+    border-radius: 5px;
+    background-color: #BD93F9;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+    background-color: #eb4d4b;
+}
+

@@ -1,0 +1,165 @@
+;; Notifications
+(defvar end-binary "/usr/bin/end-rs") 
+(defvar end-notifications '')
+(defvar history-frame-visible false)
+(defvar end-histories '')
+(defvar end-replies '')
+(defvar end-reply-text '')
+
+(defwindow notification-frame
+  :monitor 0
+  :geometry (geometry 
+    :x "0px"
+    :y "0px"
+    :width "480px"
+    :height "0px"
+    :anchor "top right")
+  :stacking "fg"
+  (literal :content end-notifications))
+
+(defwindow history-frame
+  :monitor 0
+  :class "end-history-frame"
+  :geometry (geometry 
+   :x "4px"
+   :y "1px"
+   :width "480px"
+   :height "0px"
+   :anchor "top right")
+  :stacking "fg"
+  (history-frame-wrapper))
+
+(defwidget history-button []
+  (button :class "history-button"
+          :timeout "500ms" 
+          :onclick "scripts/set-widget-visible history-frame ${!history-frame-visible}" ""
+))
+
+
+(defwidget history-frame-wrapper []
+           (revealer :transition "slidedown"
+                     :reveal history-frame-visible
+                     :duration "150ms"
+             (box :style "box {min-height: 400px}"
+               (scroll :hscroll false :vscroll true 
+			     (literal :content end-histories))))
+)
+
+(defwindow reply-frame
+  :monitor 0
+  :geometry (geometry 
+    :x "0px"
+    :y "0px"
+    :width "480px"
+    :height "0px"
+    :anchor "center")
+  :stacking "fg"
+  :focusable true
+  (literal :content end-replies))
+
+
+(defwidget end-notification[notification]
+  (eventbox
+    :onclick "${end-binary} close ${notification.id}"
+    :valign "start"
+    :height 0
+    (box
+      :class "end-default-notification-box"
+      :orientation "horizontal"
+      :space-evenly false
+      (image
+        :path {notification.icon}; end sets this property if the notification contains an image
+        :image-width 60
+        :image-height 60
+      )
+      (box
+        :class "content-box"
+        :valign "start"
+        :orientation "vertical"
+        :space-evenly "false"
+        (label 
+          :class "notification-text notification-title"
+          :valign "start"
+          :yalign 0
+          :xalign 0
+          :text {notification.summary})
+        (label
+          :class "notification-text notification-content"
+          :valign "start"
+          :yalign 0
+          :xalign 0
+          :vexpand true
+          :wrap true
+          :text {notification.body})
+      )
+      (box
+        :class "end-notification-buttons"
+        :orientation "h"
+        :space-evenly false
+        :valign "end"
+		:halign "end"
+		:hexpand true
+        :vexpand false
+        (for action in {notification.actions}
+          (button
+            :class "end-notification-button"
+            :onclick "${end-binary} action ${notification.id} ${action.id}"
+            :halign "end"
+			:vexpand false
+            {action.text}))
+        ))))
+
+(defwidget end-history[history]
+  (eventbox
+    :onclick "scripts/set-widget-visible history-frame false"
+    :height 50
+    (box
+      :class "end-history-box"
+      :orientation "horizontal"
+      :space-evenly false
+      (image
+        :path {history.icon}; end sets this property if the notification contains an image
+        :image-width 50
+        :image-height 50
+      )
+      (box
+        :class "content-box"
+        :orientation "vertical"
+        :space-evenly false
+        (label 
+          :class "notification-text notification-title"
+          :yalign 1
+          :xalign 0
+          :text {history.summary})
+        (label
+          :class "notification-text notification-content"
+          :yalign 1
+          :xalign 0
+          :wrap true
+          :text {history.body})))))
+
+(defwidget end-reply[id]
+  (box
+    :class "end-default-notification-box"
+    :orientation "vertical"
+    :space-evenly false
+    (input
+      :class "end-notification-reply"
+      :value end-reply-text
+      :onchange "${EWW_CMD} update end-reply-text='{}'")
+    (box
+      :class "end-notification-buttons"
+      :orientation "horizontal"
+      :space-evenly false
+      (button
+        :class "end-notification-button"
+        :onclick `${end-binary} reply send ${id} "${end-reply-text}"`
+        :vexpand false
+        "Reply")
+      (button
+        :class "end-notification-button"
+        :onclick "${end-binary} reply close ${id}"
+        :vexpand false
+        "Cancel"))
+  ))
+

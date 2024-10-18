@@ -1,0 +1,26 @@
+.power {
+  margin-left: 50px;
+  padding-left: 50px;
+}
+
+.button-restart, .button-lock,
+.button-quit, .button-off {
+  all: unset;
+  padding-left: 6px;
+  padding-right: 6px;
+  font-size: 18px; 
+}
+
+.button-off {
+  color: $color_red;
+}
+
+.button-restart {
+  color: $color_orange;
+}
+
+.button-quit {
+  color: $color_yellow;
+}
+
+

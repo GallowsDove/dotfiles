@@ -1,0 +1,25 @@
+(include "bar/rev.yuck")
+
+(defvar volume-rev false)
+(defpoll volume-var :intial 0.0 :interval "1s"
+  "scripts/getvol" )
+
+
+(defwidget volume []
+  (rev-wrapper-left :rev-var-name "volume-rev"
+                    :rev-var volume-rev
+                    :transition "slideleft"
+                    :tooltip "Volume: ${volume-var}%"
+    
+	(box :orientation "h"
+         :space-evenly "false"
+         :class "volume-box"
+
+      (scale :min 0
+             :max 101
+             :active true
+             :value {volume-var ?: 0}
+             :onchange "amixer -D pulse sset Master {}%"))
+
+    (button :class "vol-button"							 
+            :onclick "pavucontrol > /dev/null 2>&1 &" "󰕾 ")))

@@ -1,0 +1,74 @@
+(defwindow sys
+  :class "system-win"
+  :monitor 0
+  :geometry (geometry :x "10px"
+                      :y "0px"
+                      :width "230px"
+                      :height "0px"
+                      :anchor "top right")
+(sys-wrapper))
+
+(defwidget sys-wrapper []
+                (revealer :transition "slidedown"
+                :reveal sys-visible
+                :duration "150ms"
+             (sys))
+)
+
+(defwidget metric [label value onchange]
+  (box :orientation "h" :class "metric" :space-evenly false
+    (box :halign "start" :class "label" label)
+    (scale 
+	  :halign "end"
+	  :min 0 
+	  :max 101 
+	  :active {onchange != ""} 
+	  :value value 
+	  :onchange onchange)))
+
+(defwidget system-row [label scale-value text-value]
+  (centerbox :orientation "h" :class "system-row"
+    (label :text label :halign "start")
+	(scale 
+	  :min 0 
+	  :max 101 
+	  :active false 
+	  :value scale-value) 
+	(label :text text-value :halign "end")
+  ))
+
+(defvar sys-visible false)
+(defvar gpu-mem-total 8192) ;;No need to poll every time if your total memory doesn't change
+;;(defpoll gpu-mem-total :interval "2s" 
+;;						  :initial 1
+;;	                      :run-while sys-visible 
+;;		                  "glxinfo | grep 'Dedicated video memory' | awk '{print $4}'")
+(defpoll gpu-mem-free :interval "2s"
+                      :initial 1
+                      :run-while sys-visible
+                      "glxinfo | grep -E 'available dedicated video memory' | awk '{print $6}'")
+
+(defpoll gpu-util :interval "2s"
+                  :initial 1
+                  :run-while sys-visible
+                  "nvidia-smi -q | grep Utilization -A 1 | grep Gpu | awk '{print $3}'")
+
+
+(defwidget sys[]
+  (box :class "system" :orientation "v" :space-evenly false :halign "center" :valign "center"
+    (system-row :label "CPU " 
+	            :scale-value {EWW_CPU.avg} 
+                :text-value "${round(EWW_CPU.avg, 1)}%")
+    (system-row :label "MEMORY 󰘚" 
+	            :scale-value {EWW_RAM.used_mem_perc} 
+	            :text-value "${round(EWW_RAM.used_mem / 1073741824, 1)}G/${round(EWW_RAM.total_mem / 1073741824, 1)}G")
+    (system-row :label "DISK  " 
+	            :scale-value {(EWW_DISK["/"].free / EWW_DISK["/"].total) * 100} 
+	            :text-value "${round(EWW_DISK["/"].free / 1073741824,1)}G Free")
+	(system-row :label "GPU " 
+	            :scale-value {gpu-util ?: 0} 
+	            :text-value "${gpu-util}%")
+	(system-row :label "GPU MEMORY 󰘚" 
+	            :scale-value {(gpu-mem-total - (gpu-mem-free ?: 0)) / gpu-mem-total * 100} 
+	            :text-value "${gpu-mem-total - (gpu-mem-free ?: 0)}MB/${gpu-mem-total}MB")	
+	))

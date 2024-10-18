@@ -1,0 +1,42 @@
+(include "widgets/system.yuck")
+(include "bar/mpris.yuck")
+(include "bar/volume.yuck")
+(include "bar/tray.yuck")
+(include "bar/system.yuck")
+(include "bar/power.yuck")
+(include "end.yuck")
+
+(defwindow bar
+  :monitor 0
+  :exclusive true
+  :geometry (geometry
+                      :width "100%"
+                      :height "40px"
+                      :anchor "top center")
+  :focusable "ondemand"
+  (bar))
+
+(defpoll time :interval "10s"
+  "date '+%H:%M %b %d, %Y'")
+
+(deflisten workspace "widgets/niri-eww-workspaces")
+
+(defwidget bar []
+  (centerbox :orientation "h"
+    (workspaces)
+    (mpris)
+    (sidestuff)))
+
+(defwidget sidestuff []
+  (box :class "sidestuff" :orientation "h" :space-evenly false :halign "end"
+    (volume)
+    (tray)
+    (system)
+	(history-button)
+	(label :text time :style "label {margin-right: 6px}")
+	(power)
+	""))
+
+(defwidget workspaces [] 
+  (literal :content workspace))
+

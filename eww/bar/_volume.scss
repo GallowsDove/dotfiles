@@ -1,0 +1,20 @@
+.volume-box scale trough highlight {
+  // all: unset;
+  background-color: $color_accent;
+  color: #000000;
+  border-radius: 10px;
+}
+
+.volume-box scale trough {
+ // all: unset;
+  background-color: #4e4e4e;
+  border-radius: 50px;
+  min-height: 3px;
+  min-width: 100px;
+  margin-left: 10px;
+}
+
+.vol-button {
+  all: unset;
+  font-size: 20px;
+}

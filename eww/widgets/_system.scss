@@ -1,0 +1,27 @@
+.system {
+  all: unset;
+  border-radius: 20px;
+  padding: 5px 10px;
+  border: 2px solid $color_accent;
+}
+
+.system slider {
+  all: unset;
+  min-height: 6px;
+}
+
+.system-row scale trough highlight {
+  all: unset;
+  background-color: $color_accent;
+  border-radius: 10px;
+}
+
+.system-row scale trough {
+  all: unset;
+  background-color: $color_bg_light;
+  border-radius: 50px;
+  min-height: 3px;
+  min-width: 160px;
+  margin-left: 10px;
+  margin-right: 20px;
+}

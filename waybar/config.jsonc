@@ -1,0 +1,133 @@
+{
+    "layer": "top", // Waybar at top layer
+    "position": "top", // Waybar at the bottom of your screen
+    "margin-top": 4,
+    "margin-left": 6,
+    "margin-right": 12,
+	"margin-bottom": -8,
+	// "width": 1366, // Waybar width
+    // Choose the order of the modules
+	
+    "modules-left": [
+		"niri/workspaces",
+		"wlr/taskbar"
+	],
+    "modules-center": [],
+    "modules-right": [
+		"mpris",
+		"pulseaudio",
+		"network",
+		"cpu",
+		"memory",
+		"tray",
+		"clock",
+		"custom/lock",
+		"custom/logout",
+		"custom/poweroff"
+	],
+	"custom/lock": {
+		"format": "",
+		"tooltip": false,
+		"on-click": "swaylock"
+	},
+	"custom/logout": {
+		"format": "󰍃",
+		"tooltip": false,
+		"on-click": "niri msg action quit"
+	},
+	"custom/poweroff": {
+        "format": "",
+        "tooltip": false,
+        "on-click": "zenity --question --title='Confirmation' --text='Are you sure you want to poweroff?' && poweroff"
+    },
+    "niri/workspaces": {
+        "format": "{icon}",
+	    "format-icons": {
+		    "active": "",
+		    "default": ""
+	    }
+    },
+	"wlr/taskbar": {
+        // "all-outputs": true,
+        // "format": "{icon} {title} {short_state}",
+		"sort-by-app-id": true,
+		"icon-size": 23,
+        "format": "{icon}",
+        "tooltip-format": "{title} | {app_id}",
+        "on-click": "activate",
+        "on-click-middle": "close",
+        "on-click-right": "fullscreen"
+    },
+	"tray": {
+        "icon-size": 21,
+        "spacing": 10
+    },
+    "clock": {
+        "format-alt": "{:%d. %m. %Y}",
+		"tooltip": false
+    },
+    "cpu": {
+		"interval": 3,
+        "format": "{usage}% "
+    },
+    "memory": {
+		"interval": 3,
+        "format": "{}% "
+    },
+    "network": {
+        // "interface": "wlp2s0", // (Optional) To force the use of this interface
+        "format-wifi": "{essid} ({signalStrength}%) ",
+        "format-ethernet": "{ifname}: {ipaddr}/{cidr} ",
+        "format-disconnected": "Disconnected ⚠",
+		"on-click": "networkmanager_dmenu"
+    },
+    "pulseaudio": {
+        "format": "{volume}% {icon}",
+        "format-bluetooth": "{volume}% {icon}",
+        "format-muted": "",
+        "format-icons": {
+            "headphones": "",
+            "handsfree": "",
+            "headset": "",
+            "phone": "",
+            "portable": "",
+            "car": "",
+            "default": ["", ""]
+        },
+        "on-click": "pavucontrol"
+    },
+	"mpris": {
+		"interval": 1,
+		"max-length": 40,
+		"dynamic-len": 38,
+		"format": "{player_icon} {dynamic}",
+		"format-paused": "{status_icon} <i>{dynamic}</i>",
+		"on-click": "playerctl play-pause",
+		"on-scroll-up": "playerctl volume 0.01+",
+		"on-scroll-down": "playerctl volume 0.01-",
+		"dynamic-order": [
+			"artist",
+			"title",
+			"album",
+			"position", 
+			"length"],
+		"player-icons": {
+			"chromium": "",
+			"firefox": "",
+			"youtube": "",
+			"default": "󰐊",
+			"kdeconnect": "",
+			"mpv": "",
+			"spotify": "",
+			"vlc": "󰕼",
+			"tidal": "",
+			"tidal-hifi": "",
+			"strawberry": "🍓"
+		},
+		"status-icons": {
+			"paused": "󰏤",
+			"playing": "󰐊",
+			"stopped": "󰓛"
+		}
+	}
+}

@@ -1,0 +1,9 @@
+.mpris-buttons button {
+  all: unset;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.mpris-buttons button:hover {
+  color: $color_accent;
+}

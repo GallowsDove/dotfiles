@@ -1,0 +1,35 @@
+#!/bin/bash
+
+widgets=("sys")
+
+# close open widgets if opening a new widget
+if [ "$2" == "true" ]; then
+  for widget in $widgets; do
+	if [ "$widget" != "$2" ] && [ `eww get "$widget-visible"` == "true" ]; then
+	  eww update "$widget-visible"="false"
+	  sleep 0.2
+	fi
+  done
+  if [ "$1" != "history-frame" ] && [ `eww get "history-frame-visible"` == "true" ]; then
+	eww update "history-frame-visible"="false"
+	sleep 0.2
+    end-rs history close
+  fi
+fi
+
+# open or close new widget
+if [ "$1" == "history-frame" ]; then
+  if [ "$2" == "true" ]; then 
+    end-rs history open
+	sleep 0.05
+	eww update "history-frame-visible"="true"
+  else
+	eww update "history-frame-visible"="false"
+	sleep 0.15
+    end-rs history close
+  fi
+else
+  eww active-windows | grep "$1: $1" || eww open $1
+  eww update "$1-visible"="$2"
+fi
+

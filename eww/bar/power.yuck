@@ -1,0 +1,27 @@
+(include "bar/rev.yuck")
+
+(defvar power-rev false)
+
+(defwidget power []
+  (rev-wrapper-left :class "power"
+                    :rev-var-name "power-rev"
+                    :rev-var power-rev
+                    :transition "slideleft"
+    (box
+      (button :class "button-lock"
+              :tooltip "Lock Screen"
+              :onclick "swaylock &" "")
+
+      (button :class "button-quit" 				
+              :tooltip "Logout" 		 
+              :onclick "niri msg action quit" "󰍃")
+
+      (button :class "button-restart"		
+              :tooltip "Reboot"		 
+              :onclick "shutdown -r now"	"󰜉"))
+
+
+    (button :class "button-off"					
+            :tooltip "Shutdown"		 
+            :onclick "shutdown now"	"")))
+

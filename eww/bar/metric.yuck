@@ -1,0 +1,11 @@
+(defwidget metric-bar [label value onchange onclick]
+  (box :orientation "h"
+       :class "metric-bar"
+       :space-evenly false
+    (eventbox :onclick onclick 
+	  (box :class "label" label))
+    (scale :min 0
+           :max 101
+           :active {onchange != ""}
+           :value {value != "" ? value : 0}
+           :onchange onchange)))

@@ -1,0 +1,12 @@
+(defwidget system []
+  (box :class "cpu-bar"
+  	(circular-progress :value {EWW_CPU.avg}
+                       :class "prog-cpu"
+                       :thickness 4
+                       :start-at 75
+      (button
+        :class "icon-cpu"
+        :tooltip "CPU Usage: ${EWW_CPU.avg}%"
+		:timeout "500ms"
+		:onclick "scripts/set-widget-visible sys ${!sys-visible}"
+        ""))))

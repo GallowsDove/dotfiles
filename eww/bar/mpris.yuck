@@ -1,0 +1,28 @@
+(include "bar/rev.yuck")
+
+(deflisten mpris-val :initial ""
+  "playerctl --player=%any,firefox,chromium --follow metadata --format '{{ artist }} - {{ title }}' || true")
+
+(deflisten mpris-status :initial "Stopped"
+  "playerctl --player=%any,firefox,chromium --follow status")
+
+(defvar mpris-rev false)
+
+
+(defwidget mpris [] 
+  (rev-wrapper-right :rev-var-name "mpris-rev"
+                     :rev-var mpris-rev
+                     :transition "slideright"
+	(box :class "mpris-buttons"
+		(button :onclick "playerctl --player=%any,firefox,chromium previous"
+		        "")
+		(button :onclick "playerctl --player=%any,firefox,chromium play-pause"
+		        "${mpris-status == "Playing" ? "" : ""}")
+		(button :onclick "playerctl --player=%any,firefox,chromium next"
+		        ""))
+
+  (box :class "mpris"
+       :orientation "h"
+       :space-evenly false
+       :halign "center"
+       {mpris-val != "" ? "${mpris-val}" : ""})))

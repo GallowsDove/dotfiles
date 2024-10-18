@@ -1,0 +1,36 @@
+$color_bg: rgba(31,31,41,0.4); // #1f1f29;
+$color_bg_light: #44475A;
+$color_bg_2: rgba(31,31,41,0.95);
+$color_red: #FF5555;
+$color_green: #50FA7B;
+$color_orange: #FFB86C;
+$color_yellow: #F1FA8C;
+$color_cyan: #8BE9FD;
+$color_pink: #FF79C6;
+$color_purple: #BD93F9;
+$color_accent: $color_purple;
+
+
+* {
+  // all: unset; // Unsets everything so you can style everything from scratch
+}
+
+// Global Styles
+.bar {
+  background-color: $color_bg;
+  padding: 4px 10px;
+}
+
+.tray {
+  margin-left: 10px;
+}
+
+@import 'widgets/system';
+
+@import 'end'
+@import 'bar/mpris';
+@import 'bar/system';
+@import 'bar/volume';
+@import 'bar/metric';
+@import 'bar/power';
+@import 'bar/workspaces';

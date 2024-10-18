@@ -1,0 +1,13 @@
+.workspaces {
+  margin-top: 8px;
+}
+
+.workspaces button {
+  all: unset;
+  font-size: large;
+  margin-right: 8px;
+}
+
+.workspaces button:hover {
+  color: $color_accent;
+}

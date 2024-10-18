@@ -1,0 +1,32 @@
+(defwidget rev-wrapper-left [rev-var-name rev-var transition ?duration ?tooltip ?class]
+  (eventbox :onhover "eww update ${rev-var-name}=true"
+            :onhoverlost "eww update ${rev-var-name}=false"
+			:tooltip "${tooltip}"
+			:class class
+    (box      :orientation "h"
+              :space-evenly "false"
+              :vexpand "false"
+              :class "rev-box"
+	  (revealer :transition transition
+                :reveal rev-var
+                :duration "${duration ?: "300ms"}"
+         (children :nth 0))
+      (children :nth 1))))
+
+(defwidget rev-wrapper-right [rev-var-name rev-var transition ?duration ?tooltip ?class]
+  (eventbox :onhover "eww update ${rev-var-name}=true"
+            :onhoverlost "eww update ${rev-var-name}=false"
+			:tooltip "${tooltip}"
+			:class class
+    (box      :orientation "h"
+              :space-evenly "false"
+              :vexpand "false"
+              :class "rev-box"
+	  (children :nth 1)
+      (revealer :transition transition
+                :reveal rev-var
+                :duration "${duration ?: "300ms"}"
+   
+	    (children :nth 0)))))
+
+

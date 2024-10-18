@@ -1,0 +1,10 @@
+[Unit]
+PartOf=graphical-session.target
+After=eww.service
+Requisite=eww.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/eww open --no-daemonize bar
+ExecStop=/usr/bin/eww close --no-daemonize bar
+RemainAfterExit=yes
