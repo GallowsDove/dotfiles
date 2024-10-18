@@ -6,6 +6,7 @@ configs=("eww"
 		 "systemd"
 		 "kitty"
 		 "waybar"
+		 "nvim"
 	    )
 
 for config in "${configs[@]}"; do
@@ -17,6 +18,6 @@ for config in "${configs[@]}"; do
 	echo "Copying: $config"
     cp -r ~/.config/$config .
   else
-	echo "Not found: $config" 1>&2
+	echo "Not Found: $config" 1>&2
   fi
 done
