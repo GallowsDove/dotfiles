@@ -7,7 +7,7 @@ function M.get_dashboard()
 	local function button(sc, txt, keybind, keybind_opts)
 		local b = dashboard.button(sc, txt, keybind, keybind_opts)
 	--  b.opts.hl = "AlphaButton"
-	--  b.opts.hl_shortcut = "AlphaButtonShortcut"
+	    b.opts.hl_shortcut = "Repeat"
 		return b
 	end
 
@@ -46,6 +46,9 @@ function M.get_dashboard()
 	"⠀⠀⠀⠀⠀⠀⠀⠸⣀⣠⠤⠬⠮⠶⠒⠒⠤⠤⠤⠴⠢⠬⠥⠀⠄⠍⠍⠉⠀⠀⠀⠄⠠⠀⠈   ",
 	}
 
+	dashboard.section.header.opts.hl = "Question"
+
+
 	dashboard.section.buttons.val = {
 		button("b", "  Browse files", "<Cmd>NvimTreeOpen<CR>"),
 		button("f", "  Find file", "<Cmd>Telescope find_files<CR>"),
@@ -53,11 +56,11 @@ function M.get_dashboard()
 		button("n", "  New file", "<Cmd>ene <BAR> startinsert<CR>"),
 		button("r", "  Find repository", "<Cmd>Telescope repo list<CR>"),
 		button("u", "  Update plugins", "<Cmd>PlugUpdate<CR>"),
-		button("q", "  Quit", "<Cmd>qa<CR>"),
+		button("q", "  Quit", "<Cmd>qa<CR>"),
 	}
 
 	dashboard.section.footer.val = footer()
-	--dashboard.section.footer.opts.hl = dashboard.section.header.opts.hl
+	dashboard.section.footer.opts.hl = dashboard.section.header.opts.hl
 
 	local head_butt_padding = 3
 	local occu_height = #dashboard.section.header.val + 2 * #dashboard.section.buttons.val + head_butt_padding

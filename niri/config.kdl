@@ -14,7 +14,8 @@ input {
 
             // For example:
             // layout "us,ru"
-            // options "grp:win_space_toggle,compose:ralt,ctrl:nocaps"
+			layout "sk(qwerty)"
+            options "numlock:on,ctrl:nocaps"
         }
     }
 
@@ -182,6 +183,10 @@ layout {
         // inactive-gradient from="#505050" to="#808080" angle=45 relative-to="workspace-view"
     }
 
+	insert-hint {
+		color "rgba(189, 147, 249, 0.26)"
+	}
+
     // Struts shrink the area occupied by windows, similarly to layer-shell panels.
     // You can think of them as a kind of outer gaps. They are set in logical pixels.
     // Left and right struts will cause the next window to the side to always be visible.
@@ -255,6 +260,7 @@ window-rule {
 	match app-id="nheko"
 	match app-id="thunderbird"
 	match app-id="cinny"
+	match app-id="vesktop"
 	open-on-workspace "social"
 }
 
@@ -277,6 +283,8 @@ window-rule {
 }
 
 binds {
+    Mod+E { spawn "thunar"; } 
+
     // Keys consist of modifiers separated by + signs, followed by an XKB key name
     // in the end. To find an XKB name for a particular key, you may use a program
     // like wev.

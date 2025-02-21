@@ -7,6 +7,7 @@ configs=("eww"
 		 "kitty"
 		 "waybar"
 		 "nvim"
+		 "fuzzel"
 	    )
 
 for config in "${configs[@]}"; do

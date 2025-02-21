@@ -1,0 +1,1 @@
+nmcli -g uuid,type c show

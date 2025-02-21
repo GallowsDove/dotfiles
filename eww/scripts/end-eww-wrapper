@@ -1,7 +1,3 @@
 #!/bin/bash
 
-if [ "$1" == "open" ]; then
-  eww active-windows | grep "$2: $2" || eww open $2
-else
   eww "$@"
-fi

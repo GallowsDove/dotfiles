@@ -51,7 +51,7 @@
 (defpoll gpu-util :interval "2s"
                   :initial 1
                   :run-while sys-visible
-                  "nvidia-smi -q | grep Utilization -A 1 | grep Gpu | awk '{print $3}'")
+                  "nvidia-smi -q | grep Utilization -A 1 | grep GPU | awk '{print $3}'")
 
 
 (defwidget sys[]
