@@ -23,4 +23,8 @@
   color: $color_yellow;
 }
 
+.button-off:hover, .button-lock:hover,
+.button-quit:hover, .button-restart:hover {
+  color: $color_accent;
+}
 

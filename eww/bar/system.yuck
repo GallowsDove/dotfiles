@@ -1,5 +1,6 @@
 (defwidget system []
-  (box :class "cpu-bar"
+  (eventbox :class "cpu-bar"
+            :cursor "pointer"
   	(circular-progress :value {EWW_CPU.avg}
                        :class "prog-cpu"
                        :thickness 4

@@ -13,5 +13,10 @@
 }
 
 .icon-cpu {
+  background-color: $color_bg_light;
   padding-right: 12px;
+}
+
+.icon-cpu:hover {
+  color: $color_accent; 
 }

@@ -1,5 +1,5 @@
 $color_bg: rgba(31,31,41,0.4); // #1f1f29;
-$color_bg_light: #44475A;
+$color_bg_light: rgba(68, 71, 90, 0.4);
 $color_bg_2: rgba(31,31,41,0.95);
 $color_red: #FF5555;
 $color_green: #50FA7B;
@@ -9,6 +9,7 @@ $color_cyan: #8BE9FD;
 $color_pink: #FF79C6;
 $color_purple: #BD93F9;
 $color_accent: $color_purple;
+$color_accent_transparent: rgba(189, 147, 249, 0.4);
 
 
 * {
@@ -18,16 +19,20 @@ $color_accent: $color_purple;
 // Global Styles
 .bar {
   background-color: $color_bg;
-  padding: 4px 10px;
+  padding: 5px 10px;
+  // backdrop-filter: blur(6px);
 }
 
 .tray {
   margin-left: 10px;
+  background-color: $color_bg_light;
+  border-radius: 20px;
+  padding: 0 0.6em;
 }
 
 @import 'widgets/system';
 
-@import 'end'
+@import 'end';
 @import 'bar/mpris';
 @import 'bar/system';
 @import 'bar/volume';

@@ -1,8 +1,9 @@
-(defwidget rev-wrapper-left [rev-var-name rev-var transition ?duration ?tooltip ?class]
+(defwidget rev-wrapper-left [rev-var-name rev-var transition ?duration ?tooltip ?class ?cursor]
   (eventbox :onhover "eww update ${rev-var-name}=true"
             :onhoverlost "eww update ${rev-var-name}=false"
 			:tooltip "${tooltip}"
 			:class class
+			:cursor cursor
     (box      :orientation "h"
               :space-evenly "false"
               :vexpand "false"

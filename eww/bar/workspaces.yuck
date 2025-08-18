@@ -1,0 +1,4 @@
+(deflisten workspace "scripts/niri-eww-workspaces DP-3")
+
+(defwidget workspaces [] 
+  (literal :content workspace))

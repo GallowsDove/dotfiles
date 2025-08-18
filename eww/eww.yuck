@@ -1,9 +1,10 @@
 (include "widgets/system.yuck")
 (include "bar/mpris.yuck")
-(include "bar/volume.yuck")
-(include "bar/tray.yuck")
-(include "bar/system.yuck")
 (include "bar/power.yuck")
+(include "bar/system.yuck")
+(include "bar/tray.yuck")
+(include "bar/volume.yuck")
+(include "bar/workspaces.yuck")
 (include "end.yuck")
 
 (defwindow bar
@@ -19,12 +20,12 @@
 (defpoll time :interval "10s"
   "date '+%H:%M %b %d, %Y'")
 
-(deflisten workspace "widgets/niri-eww-workspaces")
+; (deflisten workspace "widgets/niri-eww-workspaces")
 
 (defwidget bar []
   (centerbox :orientation "h"
     (workspaces)
-    (mpris)
+    (label :text "") ; mpris
     (sidestuff)))
 
 (defwidget sidestuff []
@@ -37,6 +38,6 @@
 	(power)
 	""))
 
-(defwidget workspaces [] 
-  (literal :content workspace))
+;(defwidget workspaces [] 
+;  (literal :content workspace))
 

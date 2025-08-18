@@ -6,7 +6,8 @@
   (rev-wrapper-left :class "power"
                     :rev-var-name "power-rev"
                     :rev-var power-rev
-                    :transition "slideleft"
+			        :transition "slideleft"
+					:cursor "pointer"
     (box
       (button :class "button-lock"
               :tooltip "Lock Screen"

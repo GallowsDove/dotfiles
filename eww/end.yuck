@@ -30,10 +30,11 @@
   (history-frame-wrapper))
 
 (defwidget history-button []
-  (button :class "history-button"
-          :timeout "500ms" 
-          :onclick "scripts/set-widget-visible history-frame ${!history-frame-visible}" ""
-))
+  (eventbox :cursor "pointer"
+    (button :class "history-button"
+            :timeout "500ms" 
+            :onclick "scripts/set-widget-visible history-frame ${!history-frame-visible}" ""
+)))
 
 
 (defwidget history-frame-wrapper []

@@ -38,20 +38,29 @@
   ))
 
 (defvar sys-visible false)
-(defvar gpu-mem-total 8192) ;;No need to poll every time if your total memory doesn't change
+(defvar gpu-mem-total 17095983104) ;;No need to poll every time if your total memory doesn't change
 ;;(defpoll gpu-mem-total :interval "2s" 
 ;;						  :initial 1
 ;;	                      :run-while sys-visible 
 ;;		                  "glxinfo | grep 'Dedicated video memory' | awk '{print $4}'")
-(defpoll gpu-mem-free :interval "2s"
-                      :initial 1
-                      :run-while sys-visible
-                      "glxinfo | grep -E 'available dedicated video memory' | awk '{print $6}'")
+;;(defpoll gpu-mem-used :interval "2s"
+;;                      :initial 1
+;;                      :run-while sys-visible
+;;                      "glxinfo | grep -E 'available dedicated video memory' | awk '{print $6}'")
+(defpoll gpu-mem-used :interval "1s"
+                      :initial 0
+					  :run-while sys-visible
+					  "cat /sys/class/drm/card1/device/mem_info_vram_used")
 
-(defpoll gpu-util :interval "2s"
-                  :initial 1
-                  :run-while sys-visible
-                  "nvidia-smi -q | grep Utilization -A 1 | grep GPU | awk '{print $3}'")
+
+(defpoll gpu-util :interval "1s"
+                  :initial 0
+				  :run-while sys-visible
+				  "cat /sys/class/drm/card1/device/gpu_busy_percent")
+;;(defpoll gpu-util :interval "2s"
+;;                  :initial 1
+;;                  :run-while sys-visible
+;;                  "nvidia-smi -q | grep Utilization -A 1 | grep GPU | awk '{print $3}'")
 
 
 (defwidget sys[]
@@ -68,7 +77,7 @@
 	(system-row :label "GPU " 
 	            :scale-value {gpu-util ?: 0} 
 	            :text-value "${gpu-util}%")
-	(system-row :label "GPU MEMORY 󰘚" 
-	            :scale-value {(gpu-mem-total - (gpu-mem-free ?: 0)) / gpu-mem-total * 100} 
-	            :text-value "${gpu-mem-total - (gpu-mem-free ?: 0)}MB/${gpu-mem-total}MB")	
+	(system-row :label "GPU MEM 󰘚" 
+	            :scale-value {gpu-mem-used / gpu-mem-total * 100} 
+	            :text-value "${round(gpu-mem-used / 1073741824,1)}G/${round(gpu-mem-total / 1073741824,1)}G")	
 	))

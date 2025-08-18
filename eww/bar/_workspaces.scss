@@ -1,5 +1,5 @@
 .workspaces {
-  margin-top: 8px;
+  padding-top: 8px;
 }
 
 .workspaces button {
@@ -7,8 +7,44 @@
   font-size: large;
   min-width: 32px;
   margin: 0px -4px;
+  margin-right: 2px;
 }
 
 .workspaces button:hover {
   color: $color_accent;
+}
+
+.workspaces-bar {
+}
+
+.columns {
+  margin: 0 1px;
+  padding: 0 0;
+  padding-top: 0px;
+}
+
+.column {
+  margin: 0 3px;
+  padding: 0 0;
+  background-color: $color_bg_light;
+  border-radius: 10px;
+}
+
+.columns .focused {
+  background-color: $color_accent_transparent;
+  border-radius: 10px;
+}
+
+.window {
+  margin-right: 4px;
+  margin-left: 4px;
+  padding: 0 0;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+
+.window-eventbox:hover {
+  background-color: $color_accent_transparent;
+  border-radius: 10px;
 }

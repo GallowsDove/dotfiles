@@ -16,7 +16,7 @@ eww_reply_var = "end-replies"
 eww_reply_text = "end-reply-text"
 max_notifications = 10
 notification_orientation = "v"
-update_history = true
+update_history = false
 
 [timeout]
 low = 5
