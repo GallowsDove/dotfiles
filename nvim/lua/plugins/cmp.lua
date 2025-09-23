@@ -53,4 +53,3 @@ cmp.setup({
 })
 
 require('transparent').clear_prefix('Cmp')
-
