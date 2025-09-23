@@ -5,12 +5,13 @@ lua << EOF
   require'impatient'
   
   require'transparent'.setup()
+  vim.g.transparent_groups = vim.list_extend(vim.g.transparent_groups or {}, { "NormalFloat" })
 	
   -- Bufferline
   require'plugins.bufferline'
   
   -- Nvim Tree
-  require'nvim-tree'.setup{ view = { width = 40, }, }
+  require'nvim-tree'.setup{ view = { width = 40 } }
 
   -- Telescope
   require'telescope'.setup()
@@ -37,9 +38,6 @@ lua << EOF
 
   -- LSPConfig
   require'plugins.lspconfig'
-   
-  -- UltiSnips
-  require'plugins.ultisnips'
 
   -- Cmp
   require'plugins.cmp' 
