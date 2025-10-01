@@ -25,3 +25,5 @@ for config in "${configs[@]}"; do
 	echo "Not Found: $config" 1>&2
   fi
 done
+
+cp ~/.zshrc .
