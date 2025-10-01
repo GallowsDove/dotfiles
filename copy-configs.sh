@@ -8,6 +8,9 @@ configs=("eww"
 		 "waybar"
 		 "nvim"
 		 "fuzzel"
+		 "gtk-2.0"
+		 "gtk-3.0"
+		 "gtk-4.0"
 	    )
 
 for config in "${configs[@]}"; do
