@@ -1,0 +1,43 @@
+layout {
+    gaps 16
+    center-focused-column "never"
+    background-color "transparent"
+    preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+        proportion 0.66667
+    }
+    focus-ring {
+        width 6
+        active-color "rgba(189, 147, 249, 0.26)"
+        inactive-color "rgba(68, 71, 90, 0.6)"
+        urgent-color "rgba(255, 85, 85, 0.4)"
+    }
+
+    border {
+        off
+    }
+
+	tab-indicator {
+        on
+        // hide-when-single-tab
+        // place-within-column
+        gap 1
+        width 6
+		length total-proportion=0.9
+        position "top"
+        gaps-between-tabs 10
+        corner-radius 4
+        active-color "rgba(189, 147, 249, 0.8)"
+        inactive-color "rgba(68, 71, 90, 0.8)"
+        urgent-color "rgba(255, 85, 85, 0.8)"
+    }
+
+	insert-hint {
+		color "rgba(189, 147, 249, 0.26)"
+	}
+
+    struts {
+        top -8
+    }
+}

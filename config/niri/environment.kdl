@@ -1,0 +1,19 @@
+environment {
+    DISPLAY ":0"
+    TERMINAL "kitty"
+    QT_QPA_PLATFORMTHEME "gtk2"
+    QT_QPA_PLATFORM "wayland"
+    ELECTRON_OZONE_PLATFORM_HINT "auto"
+
+    MOZ_ENABLE_WAYLAND "1"
+    MOZ_WEBRENDERER "1"
+
+    GTK_IM_MODULE "fcitx"
+    QT_IM_MODULE "fcitx"
+    SDL_IM_MODULE "fcitx"
+    GLFW_IM_MODULE "ibus"
+    INPUT_METHOD "fcitx"
+    IMSETTINGS_MODULE "fcitx"
+    QT_IM_MODULES "wayland;fcitx;ibus"
+    XMODIFIERS "@im=fcitx"
+}

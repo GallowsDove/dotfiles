@@ -1,0 +1,29 @@
+recent-windows {
+    // off
+    open-delay-ms 150
+
+    highlight {
+        active-color "rgba(189, 147, 249, 0.26)"
+        urgent-color "rgba(255, 85, 85, 0.4)"
+        padding 30
+        corner-radius 4
+    }
+
+    previews {
+        max-height 480
+        max-scale 0.5
+    }
+
+    binds {
+        Alt+Tab         { next-window; }
+        Alt+Shift+Tab   { previous-window; }
+        Alt+grave       { next-window     filter="app-id"; }
+        Alt+Shift+grave { previous-window filter="app-id"; }
+
+        Mod+Tab         { next-window; }
+        Mod+Shift+Tab   { previous-window; }
+        Mod+grave       { next-window     filter="app-id"; }
+        Mod+Shift+grave { previous-window filter="app-id"; }
+    }
+}
+

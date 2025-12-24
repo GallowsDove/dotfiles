@@ -1,0 +1,100 @@
+prefer-no-csd
+
+input {
+    keyboard {
+        xkb {
+            options "numlock:on,ctrl:nocaps"
+        }
+    }
+
+    touchpad {
+        off
+    }
+
+    mouse {
+        accel-speed 0.0
+        accel-profile "flat"
+    }
+}
+
+cursor {
+	xcursor-theme "Dracula-cursors"
+    xcursor-size 24
+}
+
+overview {
+	zoom 0.5
+    workspace-shadow {
+        off
+    }
+}
+
+layer-rule {
+    match namespace="^wallpaper$"
+    place-within-backdrop true
+}
+
+output "DP-1" {
+    variable-refresh-rate
+}
+
+include "layout.kdl"
+include "recent-windows.kdl"
+
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+
+animations {
+    slowdown 0.8
+}
+
+window-rule {
+    match app-id=r#"^kitty$"#
+    default-column-width { proportion 0.33333; }
+}
+
+window-rule {
+	match app-id=r#"^LibreWolf$"#
+	open-maximized true
+}
+
+window-rule {
+	match app-id=r#"^thunar$"# title=r#"^Rename"#
+	open-floating true
+}
+
+window-rule {
+	geometry-corner-radius 10
+    clip-to-geometry true
+}
+
+window-rule {
+	match app-id="discord"
+	match app-id="nheko"
+	match app-id="thunderbird"
+	match app-id="cinny"
+	match app-id="vesktop"
+	open-on-workspace "social"
+}
+
+window-rule {
+	match app-id="lutris"
+	match app-id="steam"
+	open-on-workspace "game"
+}
+
+include "binds.kdl"
+include "environment.kdl"
+include "gestures.kdl"
+
+
+hotkey-overlay {
+    skip-at-startup
+}
+
+
+
+workspace "main"
+
+workspace "game"
+
+workspace "social"
