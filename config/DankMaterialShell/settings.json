@@ -496,8 +496,8 @@
           "showPrinterIcon": false
         }
       ],
-      "spacing": 4,
-      "innerPadding": 9,
+      "spacing": 0,
+      "innerPadding": 10,
       "bottomGap": 0,
       "transparency": 0.76,
       "widgetTransparency": 0.76,
@@ -570,7 +570,7 @@
       "autoHideDelay": 250,
       "showOnWindowsOpen": false,
       "openOnOverview": true,
-      "visible": true,
+      "visible": false,
       "popupGapsAuto": true,
       "popupGapsManual": 0,
       "maximizeDetection": false,
