@@ -1,0 +1,56 @@
+{
+  "amdGpuMonitor": {
+    "enabled": true
+  },
+  "commandRunner": {
+    "enabled": true,
+    "history": [
+      "[ work"
+    ],
+    "noTrigger": true,
+    "trigger": "",
+    "maxHistoryItems": 1
+  },
+  "dankKDEConnect": {
+    "enabled": true,
+    "selectedDeviceId": "4a103014213e4732a35439efcb4a7798"
+  },
+  "dankBitwarden": {
+    "enabled": true,
+    "trigger": "bw",
+    "copyToClipboard": true,
+    "noTrigger": false
+  },
+  "lyricsOnPanel": {
+    "enabled": true,
+    "showMediaControls": false,
+    "whiteMediaControlIconsChecked": true,
+    "lyricTextSize": 32,
+    "lyricTextVerticalOffset": 0,
+    "lyricTextBold": false,
+    "lyricTextItalic": false,
+    "mediaControllItemSize": 16,
+    "hideItemWhenNoControlChecked": true,
+    "preferedWidgetWidth": "600"
+  },
+  "dankActions": {
+    "enabled": true,
+    "variants": [
+      {
+        "icon": "lyrics",
+        "displayText": "",
+        "displayCommand": "",
+        "clickCommand": "dms ipc bar toggle name Lyrics",
+        "middleClickCommand": "",
+        "rightClickCommand": "dms ipc bar toggle name Lyrics",
+        "updateInterval": 0,
+        "showIcon": true,
+        "showText": false,
+        "visibilityCommand": "",
+        "visibilityInterval": 0,
+        "id": "variant_1770453066099",
+        "name": "Lyrics Toggle"
+      }
+    ]
+  }
+}

@@ -25,6 +25,7 @@ USER_CONFIGS=(
   gtk-2.0
   gtk-3.0
   gtk-4.0
+  DankMaterialShell
 )
 
 # Dotfiles (files) from $HOME
@@ -110,6 +111,9 @@ main() {
       warn "Not found: $p"
     fi
   done
+
+  log "Removing .git subfolders"
+  find . -mindepth 2 -type d -name .git -prune -exec rm -rf {} +
 
   log "Done. Repo root: $REPO_ROOT"
 }

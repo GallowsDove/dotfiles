@@ -1,5 +1,6 @@
 # If you come from bash you might have to change your $PATH.
- export PATH=$HOME/.local/bin:/usr/local/bin:$PATH
+export PATH=$HOME/.local/bin:/usr/local/bin:$PATH
+export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/gcr/ssh"
 
 # if [[ $TERM == *kitty ]]; then
 # 	neoflex

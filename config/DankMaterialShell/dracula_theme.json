@@ -1,0 +1,22 @@
+{
+  "name": "Dracula Dark",
+  "primary": "#BD93F9",
+  "primaryText": "#282A36",
+  "primaryContainer": "#FF79C6",
+  "secondary": "#8BE9FD",
+  "surface": "#282A36",
+  "surfaceText": "#F8F8F2",
+  "surfaceVariant": "#44475A",
+  "surfaceVariantText": "#F8F8F2",
+  "surfaceTint": "#BD93F9",
+  "background": "#282A36",
+  "backgroundText": "#F8F8F2",
+  "outline": "#6272A4",
+  "surfaceContainer": "#343746",
+  "surfaceContainerHigh": "#3B3E50",
+  "surfaceContainerHighest": "#44475A",
+  "error": "#FF5555",
+  "warning": "#FFB86C",
+  "info": "#8BE9FD",
+  "matugen_type": "scheme-expressive"
+}
