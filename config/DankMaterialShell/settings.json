@@ -1,8 +1,13 @@
 {
   "currentThemeName": "custom",
-  "currentThemeCategory": "custom",
-  "customThemeFile": "/home/arch/.config/DankMaterialShell/dracula_theme.json",
-  "registryThemeVariants": {},
+  "currentThemeCategory": "registry",
+  "customThemeFile": "/home/arch/.config/DankMaterialShell/themes/catppuccin/theme.json",
+  "registryThemeVariants": {
+    "catppuccin": {
+      "flavor": "mocha",
+      "accent": "mauve"
+    }
+  },
   "matugenScheme": "scheme-tonal-spot",
   "runUserMatugenTemplates": true,
   "matugenTargetMonitor": "",
@@ -30,10 +35,12 @@
   "nightModeEnabled": false,
   "animationSpeed": 4,
   "customAnimationDuration": 100,
+  "syncComponentAnimationSpeeds": true,
   "popoutAnimationSpeed": 1,
   "popoutCustomAnimationDuration": 150,
   "modalAnimationSpeed": 1,
   "modalCustomAnimationDuration": 150,
+  "enableRippleEffects": true,
   "wallpaperFillMode": "Fit",
   "blurredWallpaperLayer": false,
   "blurWallpaperOnOverview": true,
@@ -68,9 +75,9 @@
   "controlCenterShowPrinterIcon": false,
   "controlCenterShowScreenSharingIcon": true,
   "showPrivacyButton": true,
-  "privacyShowMicIcon": false,
-  "privacyShowCameraIcon": false,
-  "privacyShowScreenShareIcon": false,
+  "privacyShowMicIcon": true,
+  "privacyShowCameraIcon": true,
+  "privacyShowScreenShareIcon": true,
   "controlCenterWidgets": [
     {
       "id": "volumeSlider",
@@ -150,6 +157,7 @@
   "scrollTitleEnabled": true,
   "audioVisualizerEnabled": true,
   "audioScrollMode": "volume",
+  "audioWheelScrollAmount": 5,
   "clockCompactMode": false,
   "focusedWindowCompactMode": false,
   "runningAppsCompactMode": true,
@@ -241,7 +249,7 @@
   "launcherLogoBrightness": 0.5,
   "launcherLogoContrast": 1,
   "launcherLogoSizeOffset": 6,
-  "fontFamily": "Inter Variable",
+  "fontFamily": "Fira Sans",
   "monoFontFamily": "Fira Code",
   "fontWeight": 400,
   "fontScale": 1,
@@ -273,7 +281,7 @@
   "fadeToLockGracePeriod": 5,
   "fadeToDpmsEnabled": true,
   "fadeToDpmsGracePeriod": 5,
-  "launchPrefix": "",
+  "launchPrefix": "niri msg action spawn --",
   "brightnessDevicePins": {},
   "wifiNetworkPins": {},
   "bluetoothDevicePins": {},
@@ -286,21 +294,21 @@
   "runDmsMatugenTemplates": true,
   "matugenTemplateGtk": true,
   "matugenTemplateNiri": true,
-  "matugenTemplateHyprland": true,
-  "matugenTemplateMangowc": true,
+  "matugenTemplateHyprland": false,
+  "matugenTemplateMangowc": false,
   "matugenTemplateQt5ct": true,
   "matugenTemplateQt6ct": true,
   "matugenTemplateFirefox": true,
   "matugenTemplatePywalfox": true,
-  "matugenTemplateZenBrowser": true,
+  "matugenTemplateZenBrowser": false,
   "matugenTemplateVesktop": true,
-  "matugenTemplateEquibop": true,
-  "matugenTemplateGhostty": true,
+  "matugenTemplateEquibop": false,
+  "matugenTemplateGhostty": false,
   "matugenTemplateKitty": true,
-  "matugenTemplateFoot": true,
-  "matugenTemplateAlacritty": true,
+  "matugenTemplateFoot": false,
+  "matugenTemplateAlacritty": false,
   "matugenTemplateNeovim": true,
-  "matugenTemplateWezterm": true,
+  "matugenTemplateWezterm": false,
   "matugenTemplateDgop": true,
   "matugenTemplateKcolorscheme": true,
   "matugenTemplateVscode": true,
@@ -456,10 +464,6 @@
           "enabled": true
         },
         {
-          "id": "clipboard",
-          "enabled": true
-        },
-        {
           "id": "dankKDEConnect",
           "enabled": true
         },
@@ -470,6 +474,10 @@
         },
         {
           "id": "amdGpuMonitor",
+          "enabled": true
+        },
+        {
+          "id": "privacyIndicator",
           "enabled": true
         },
         {

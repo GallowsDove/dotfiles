@@ -2,8 +2,8 @@ environment {
     DISPLAY ":0"
     TERMINAL "kitty"
 	XDG_CURRENT_DESKTOP "niri"
-    QT_QPA_PLATFORMTHEME "gtk2"
-	QT_QPA_PLATFORMTHEME_QT6 "gtk2"
+    QT_QPA_PLATFORMTHEME "qt6ct"
+    QT_QPA_PLATFORMTHEME_QT6 "qt6ct"
     QT_QPA_PLATFORM "wayland"
     ELECTRON_OZONE_PLATFORM_HINT "auto"
 
@@ -19,5 +19,5 @@ environment {
     QT_IM_MODULES "wayland;fcitx;ibus"
     XMODIFIERS "@im=fcitx"
 
-	_JAVA_AWT_WM_NONREPARENTING "1"
+    _JAVA_AWT_WM_NONREPARENTING "1"
 }

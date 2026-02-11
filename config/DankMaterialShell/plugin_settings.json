@@ -5,7 +5,7 @@
   "commandRunner": {
     "enabled": true,
     "history": [
-      "[ work"
+      "poweroff"
     ],
     "noTrigger": true,
     "trigger": "",
