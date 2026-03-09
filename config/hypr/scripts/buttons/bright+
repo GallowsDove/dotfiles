@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+if ! [ -x "$(command -v brightnessctl)" ]; then
+  notify-send "brightnessctl not found"
+  exit 1
+fi
+
+brightnessctl set 5%+ >/dev/null
+notify-send "$(brightnessctl info | awk -F'[()]' '/Current brightness/ { print $2; exit }')"

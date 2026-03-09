@@ -1,0 +1,39 @@
+// ! Auto-generated file. Do not edit directly.
+// Remove `include "dms/colors.kdl"` from your config to override.
+
+layout {
+    background-color "transparent"
+
+    focus-ring {
+        active-color   "{{colors.primary.default.hex}}a8"
+        inactive-color "{{colors.outline.default.hex}}a8"
+        urgent-color   "{{colors.error.default.hex}}a8"
+    }
+
+    border {
+        active-color   "{{colors.primary.default.hex}}ff"
+        inactive-color "{{colors.outline.default.hex}}ff"
+        urgent-color   "{{colors.error.default.hex}}ff"
+    }
+
+    shadow {
+        color "{{colors.shadow.default.hex}}70"
+    }
+
+    tab-indicator {
+        active-color   "{{colors.primary.default.hex}}e6"
+        inactive-color "{{colors.outline.default.hex}}e6"
+        urgent-color   "{{colors.error.default.hex}}e6"
+    }
+
+    insert-hint {
+        color "{{colors.primary.default.hex}}80"
+    }
+}
+
+recent-windows {
+    highlight {
+        active-color   "{{colors.primary_container.dark.hex}}"
+        urgent-color   "{{colors.error.default.hex}}"
+    }
+}

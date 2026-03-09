@@ -1,0 +1,50 @@
+@import "../color";
+
+.app-launcher-search,
+entry.app-launcher-search {
+  margin-left: 35px;
+  margin-right: 60px;
+  margin-bottom: 20px;
+  font-size: 2rem;
+  color: $brown;
+  background-color: rgba($tan, 0.96);
+  padding: 6px;
+  border: 2px solid rgba($brown, 0.35);
+  caret-color: $brown;
+}
+
+entry.app-launcher-search {
+  min-height: 44px;
+
+  text {
+    color: $brown;
+  }
+
+  selection {
+    color: $tan;
+    background-color: $brown;
+  }
+}
+
+.app-launcher {
+  .nier-long-button-group-ruler {
+    all: unset;
+  }
+  margin-bottom: 100px;
+}
+
+.nier-button {
+  .app-launcher-icon {
+    margin-left: 20px;
+    margin-right: 20px;
+    opacity: 0.5;
+  }
+}
+
+.nier-button-hover {
+  .app-launcher-icon {
+    margin-left: 20px;
+    margin-right: 20px;
+    opacity: 1;
+  }
+}

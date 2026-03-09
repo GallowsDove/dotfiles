@@ -178,6 +178,7 @@ animations {
 // by setting an empty default-column-width.
 window-rule {
     match app-id=r#"^kitty$"#
+	exclude title=r#"-e"#
     default-column-width { proportion 0.33333; }
 }
 
@@ -266,7 +267,6 @@ workspace "social"
 spawn-at-startup "valent" "--gapplication-service"
 
 // Include dms files
-include "dms/colors.kdl"
 include "dms/layout.kdl"
 include "dms/alttab.kdl"
 include "dms/binds.kdl"
@@ -279,5 +279,7 @@ include "gestures.kdl"
 include "layout.kdl"
 include "recent-windows.kdl"
 
+
+include "dms/custom-colors.kdl"
 
 include "dms/windowrules.kdl"

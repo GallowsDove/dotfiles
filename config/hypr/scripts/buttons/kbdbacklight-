@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+
+if ! [ -x "$(command -v brightnessctl)" ]; then
+  notify-send "brightnessctl not found"
+  exit 1
+fi
+
+kbd_device=
+for path in /sys/class/leds/*kbd_backlight* /sys/class/leds/*::kbd_backlight; do
+  if [ -e "$path" ]; then
+    kbd_device=$(basename "$path")
+    break
+  fi
+done
+
+if [ -z "$kbd_device" ]; then
+  notify-send "keyboard backlight device not found"
+  exit 1
+fi
+
+current=$(brightnessctl -d "$kbd_device" g)
+
+if [ "$current" -gt 0 ]; then
+  brightnessctl -d "$kbd_device" set "$((current - 1))" >/dev/null
+fi

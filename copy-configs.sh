@@ -26,6 +26,8 @@ USER_CONFIGS=(
   gtk-3.0
   gtk-4.0
   DankMaterialShell
+  hypr
+  matugen
 )
 
 # Dotfiles (files) from $HOME

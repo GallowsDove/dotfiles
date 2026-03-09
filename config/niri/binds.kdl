@@ -1,7 +1,8 @@
 binds {
-    Mod+E repeat=false { spawn "thunar"; } 
-
-    Mod+Shift+Slash { show-hotkey-overlay; }
+    Mod+E repeat=false { spawn "nemo"; } 
+	Mod+Shift+E repeat=false { spawn "kitty" "-e" "yazi"; }
+    
+	Mod+Shift+Slash { show-hotkey-overlay; }
 
     Mod+T repeat=false { spawn "kitty"; }
     Mod+D repeat=false { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
@@ -247,7 +248,6 @@ binds {
     Alt+Print { screenshot-window; }
 
     // The quit action will show a confirmation dialog to avoid accidental exits.
-    Mod+Shift+E { quit; }
 
     // Powers off the monitors. To turn them back on, do any input like
     // moving the mouse or pressing any other key.

@@ -52,5 +52,13 @@
         "name": "Lyrics Toggle"
       }
     ]
+  },
+  "niriKdlAlpha": {
+    "enabled": false,
+    "alphaPercent": 53,
+    "delayMs": 0,
+    "alphaFocusRingPercent": 66,
+    "alphaBorderPercent": 100,
+    "alphaTabIndicatorPercent": 90
   }
 }

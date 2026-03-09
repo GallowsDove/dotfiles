@@ -1,0 +1,14 @@
+{
+  "id": "niriKdlAlpha",
+  "name": "Niri KDL Alpha Patch",
+  "description": "Appends/replaces alpha channel for focus-ring, border and tab-indicator colors in niri/dms/colors.kdl after wallpaper changes.",
+  "version": "1.0.0",
+  "author": "you",
+  "icon": "opacity",
+  "type": "daemon",
+  "component": "./NiriKdlAlphaDaemon.qml",
+  "settings": "./NiriKdlAlphaSettings.qml",
+  "requires_dms": ">=1.2.0",
+  "permissions": ["settings_read", "settings_write", "process"]
+}
+

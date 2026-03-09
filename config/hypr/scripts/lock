@@ -1,0 +1,13 @@
+#!/usr/bin/bash
+
+theme_dir="${HYPRLAND_THEME:-$HOME/.config/hypr/themes/yorha}"
+color_file="${COLORFILE:-$theme_dir/colors_nier_light}"
+config_file="$theme_dir/hyprlock_light.conf"
+
+case "$(basename "$color_file")" in
+	*dark*)
+		config_file="$theme_dir/hyprlock_dark.conf"
+		;;
+esac
+
+exec hyprlock --config "$config_file"

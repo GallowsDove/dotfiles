@@ -2,6 +2,10 @@
 export PATH=$HOME/.local/bin:/usr/local/bin:$PATH
 export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/gcr/ssh"
 
+if [[ -n "$HYPRLAND_INSTANCE_SIGNATURE" ]]; then
+  source "$HOME/.config/hypr/themes/yorha/components/zsh/theme.zsh"
+fi
+
 # if [[ $TERM == *kitty ]]; then
 # 	neoflex
 # fi
@@ -17,10 +21,10 @@ export ZSH="$HOME/.oh-my-zsh"
 # load a random theme each time Oh My Zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
 # See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="robbyrussell"
+# ZSH_THEME="robbyrussell"
 
 export ZSH_COLORIZE_TOOL=chroma
-export ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#888888"
+# export ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#888888"
 export ZSH_AUTOSUGGEST_STRATEGY="history"
 export AUTO_LS_COMMANDS=(exa)
 export AUTO_LS_NEWLINE=false

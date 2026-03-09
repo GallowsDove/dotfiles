@@ -1,0 +1,60 @@
+[config]
+
+[templates.niri]
+input_path = '/home/arch/.config/matugen/templates/niri-colors.kdl'
+output_path = '/home/arch/.cache/matugen/templates/niri/custom-colors.kdl'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py niri'
+
+[templates.nvim]
+input_path = "/home/arch/.config/matugen/templates/nvim.lua"
+output_path = '/home/arch/.cache/matugen/templates/nvim/matugen.lua'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py nvim'
+
+[templates.gtk3]
+input_path = '/home/arch/.config/matugen/templates/gtk-colors.css'
+output_path = '/home/arch/.cache/matugen/templates/gtk/dank-colors-gtk3.css'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py gtk3'
+
+[templates.gtk4]
+input_path = '/home/arch/.config/matugen/templates/gtk-colors.css'
+output_path = '/home/arch/.cache/matugen/templates/gtk/dank-colors-gtk4.css'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py gtk4'
+
+[templates.qt5ct]
+input_path = '/home/arch/.config/matugen/templates/qtct-colors.conf'
+output_path = '/home/arch/.cache/matugen/templates/qt5ct/matugen.conf'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py qt5ct'
+
+[templates.qt6ct]
+input_path = '/home/arch/.config/matugen/templates/qtct-colors.conf'
+output_path = '/home/arch/.cache/matugen/templates/qt6ct/matugen.conf'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py qt6ct'
+
+[templates.pywalfox]
+input_path = '/home/arch/.config/matugen/templates/pywalfox-colors.json'
+output_path = '/home/arch/.cache/matugen/templates/pywalfox/colors.json'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py pywalfox'
+
+[templates.vscode]
+input_path = '/home/arch/.config/matugen/templates/vscode-colors.json'
+output_path = '/home/arch/.cache/matugen/templates/vscode/matugen-color-theme.json'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py vscode'
+
+[templates.intellij_ui]
+input_path = '/home/arch/.config/matugen/templates/intellij.theme.json'
+output_path = '/home/arch/.cache/matugen/templates/intellij/matugen.theme.json'
+
+[templates.intellij_plugin_scheme]
+input_path = '/home/arch/.config/matugen/templates/intellij.icls'
+output_path = '/home/arch/.cache/matugen/templates/intellij/Matugen.xml'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/build_jetbrains_theme.py'
+
+[templates.vesktop]
+input_path = '/home/arch/.config/matugen/templates/vesktop.css'
+output_path = '/home/arch/.cache/matugen/templates/vesktop/dank-discord.css'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py vesktop'
+
+[templates.fcitx5]
+input_path = '/home/arch/.config/matugen/templates/fcitx5-theme.conf'
+output_path = '/home/arch/.cache/matugen/templates/fcitx5/theme.conf'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py fcitx5'
