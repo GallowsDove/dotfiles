@@ -280,6 +280,6 @@ include "layout.kdl"
 include "recent-windows.kdl"
 
 
-include "dms/custom-colors.kdl"
+include "matugen-colors.kdl"
 
 include "dms/windowrules.kdl"

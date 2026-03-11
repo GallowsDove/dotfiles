@@ -302,7 +302,7 @@ const createCenterSettingsBurst = ({ vertical = false, reverse = false } = {}) =
 });
 
 const createRadialCenterSettingsBurst = ({ reverse = false } = {}) => ({
-  durationMs: 1000,
+  durationMs: 600,
   easeBezier: [0.0, 0.0, 1.0, 1.0],
   buildDeclarations: ({ box, progress }, index) => ([
     `const vec2 windowMin${index} = vec2(${box.minX.toFixed(6)}, ${box.minY.toFixed(6)});`,

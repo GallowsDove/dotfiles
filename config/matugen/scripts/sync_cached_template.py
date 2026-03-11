@@ -11,6 +11,7 @@ VSCODE_THEME_TARGET = HOME / '.vscode' / 'extensions' / 'local.matugen-theme-0.0
 FCITX_THEME_DIR = HOME / '.local' / 'share' / 'fcitx5' / 'themes' / 'matugen'
 FCITX_ASSET_SOURCE = Path('/usr/share/fcitx5/themes/default-dark')
 FCITX_ASSETS = ('arrow.png', 'next.png', 'prev.png', 'radio.png')
+GTK_SYNC_SCRIPT = Path(__file__).with_name('sync_gtk_theme.py')
 
 
 def _log(message: str) -> None:
@@ -26,6 +27,8 @@ def _copy_file(source: Path, target: Path) -> None:
         raise SystemExit(f'Missing generated template: {source}')
 
     target.parent.mkdir(parents=True, exist_ok=True)
+    if target.is_symlink():
+        target.unlink()
     shutil.copy2(source, target)
     _log(f'Copied {source} -> {target}')
 
@@ -51,7 +54,7 @@ def sync_niri() -> None:
     _log('Syncing niri template')
     _copy_file(
         CACHE_ROOT / 'niri' / 'matugen-colors.kdl',
-        HOME / '.config' / 'niri' / 'dms' / 'matugen-colors.kdl',
+        HOME / '.config' / 'niri' / 'matugen-colors.kdl',
     )
 
 
@@ -68,29 +71,11 @@ def sync_nvim() -> None:
 
 
 def sync_gtk3() -> None:
-    target_root = HOME / '.config' / 'gtk-3.0'
-    if not target_root.exists():
-        _log('Skipping gtk3 sync: target path not found')
-        return
-
-    _log('Syncing gtk3 template')
-    _copy_file(
-        CACHE_ROOT / 'gtk' / 'matugen-colors-gtk3.css',
-        target_root / 'matugen-colors.css',
-    )
+    _run_command('python3', str(GTK_SYNC_SCRIPT), 'gtk3')
 
 
 def sync_gtk4() -> None:
-    target_root = HOME / '.config' / 'gtk-4.0'
-    if not target_root.exists():
-        _log('Skipping gtk4 sync: target path not found')
-        return
-
-    _log('Syncing gtk4 template')
-    _copy_file(
-        CACHE_ROOT / 'gtk' / 'matugen-colors-gtk4.css',
-        target_root / 'matugen-colors.css',
-    )
+    _run_command('python3', str(GTK_SYNC_SCRIPT), 'gtk4')
 
 
 def sync_qt5ct() -> None:

@@ -1,0 +1,25 @@
+cursor #48463d
+cursor_text_color #5d594d
+
+foreground            #48463d
+background            #c2bda6
+selection_foreground  #e7e1cb
+selection_background  #8f3f71
+url_color             #076678
+
+color0   #f9f5d7
+color1   #9d0006
+color2   #6f7a12
+color3   #b57614
+color4   #076678
+color5   #8f3f71
+color6   #427b58
+color7   #48463d
+color8   #978f79
+color9   #9d0006
+color10  #6f7a12
+color11  #b57614
+color12  #076678
+color13  #8f3f71
+color14  #427b58
+color15  #282828

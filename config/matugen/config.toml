@@ -1,5 +1,8 @@
 [config]
 
+[gtk]
+accent_buttons = true
+
 [templates.niri]
 input_path = '/home/arch/.config/matugen/templates/niri-colors.kdl'
 output_path = '/home/arch/.cache/matugen/templates/niri/matugen-colors.kdl'
@@ -13,12 +16,12 @@ post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py 
 [templates.gtk3]
 input_path = '/home/arch/.config/matugen/templates/gtk-colors.css'
 output_path = '/home/arch/.cache/matugen/templates/gtk/matugen-colors-gtk3.css'
-post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py gtk3'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_gtk_theme.py gtk3'
 
 [templates.gtk4]
 input_path = '/home/arch/.config/matugen/templates/gtk-colors.css'
 output_path = '/home/arch/.cache/matugen/templates/gtk/matugen-colors-gtk4.css'
-post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py gtk4'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_gtk_theme.py gtk4'
 
 [templates.qt5ct]
 input_path = '/home/arch/.config/matugen/templates/qtct-colors.conf'
