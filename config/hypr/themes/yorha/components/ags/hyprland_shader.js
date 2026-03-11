@@ -1,55 +1,221 @@
 import { Utils } from "./imports.js";
+import { createCubicBezier } from "./hyprland_shader/bezier.js";
+import {
+  buildOpenWindowShader,
+  MAX_ACTIVE_OPEN_WINDOW_ANIMATIONS,
+  OPEN_WINDOW_ANIMATION_STEPS,
+  OPEN_WINDOW_EFFECTS,
+} from "./hyprland_shader/effects.js";
+import {
+  getStableClientForAnimation,
+  isTrueFullscreen,
+  normalizeWindowAddress,
+  normalizeWindowBox,
+  normalizeWindowBoxFromState,
+  shouldAnimateWindow,
+  wait,
+  watchedHyprlandEvents,
+} from "./hyprland_shader/windowing.js";
 
 const { execAsync } = Utils;
 
-const watched_hyprland_events = new Set([
-  "activewindowv2",
-  "closewindow",
-  "configreloaded",
-  "fullscreen",
-  "openwindow",
-]);
-
-const is_true_fullscreen = (client) => {
-  const internalFullscreenState = Number(client?.fullscreen);
-
-  if (!Number.isNaN(internalFullscreenState)) {
-    return internalFullscreenState >= 2;
+const getEffectEase = (effectId) => {
+  const effect = OPEN_WINDOW_EFFECTS[effectId];
+  if (!effect.ease) {
+    effect.ease = createCubicBezier(...effect.easeBezier);
   }
 
-  const fullscreenMode = Number(client?.fullscreenMode);
-  if (!Number.isNaN(fullscreenMode)) {
-    return fullscreenMode >= 2;
-  }
-
-  return client?.fullscreen === true;
+  return effect.ease;
 };
 
-export const start_hyprland_shader_sync = (screen_shader_path) => {
-  let hyprland_event_stream = null;
+export const start_hyprland_shader_sync = (
+  screenShaderPath,
+  openWindowTemplatePath = "",
+  openWindowRuntimePath = "",
+  openWindowAnimation = "scanline",
+  openWindowAnimationDurationScale = 1,
+) => {
+  let hyprlandEventStream = null;
+  let animationLoopRunning = false;
+  let activeWindowAnimations = [];
 
-  const apply_screen_shader = (enabled) => {
-    const command = enabled
-      ? `hyprctl keyword decoration:screen_shader ${screen_shader_path}`
-      : `hyprctl keyword decoration:screen_shader ''`;
+  const selectedOpenWindowEffect = OPEN_WINDOW_EFFECTS[openWindowAnimation]
+    ? openWindowAnimation
+    : "scanline";
+  const durationScale = Number.isFinite(Number(openWindowAnimationDurationScale))
+    ? Math.max(0.25, Number(openWindowAnimationDurationScale))
+    : 1;
+  const openWindowAnimationEnabled = Boolean(
+    openWindowAnimation !== "none"
+    && openWindowTemplatePath
+    && openWindowRuntimePath
+  );
 
-    execAsync(["bash", "-lc", command])
-      .then(print)
-      .catch(print);
-  };
-
-  const sync_screen_shader = async () => {
+  const applyScreenShader = async (path) => {
     try {
-      const activeWindow = JSON.parse(await execAsync(["hyprctl", "-j", "activewindow"]));
-      apply_screen_shader(!is_true_fullscreen(activeWindow));
+      await execAsync(["hyprctl", "keyword", "decoration:screen_shader", path]);
     } catch (error) {
       print(error);
     }
   };
 
-  const start_hyprland_event_stream = () => {
-    hyprland_event_stream?.force_exit();
-    hyprland_event_stream = Utils.subprocess(
+  const syncScreenShader = async () => {
+    if (animationLoopRunning || activeWindowAnimations.length > 0) {
+      return;
+    }
+
+    try {
+      const activeWindow = JSON.parse(await execAsync(["hyprctl", "-j", "activewindow"]));
+      await applyScreenShader(isTrueFullscreen(activeWindow) ? "" : screenShaderPath);
+    } catch (error) {
+      print(error);
+    }
+  };
+
+  const renderActiveWindowAnimations = async () => {
+    try {
+      if (activeWindowAnimations.length === 0) {
+        return;
+      }
+
+      const template = Utils.readFile(openWindowTemplatePath);
+      if (!template) {
+        return;
+      }
+
+      const now = Date.now();
+      const clients = JSON.parse(await execAsync(["hyprctl", "-j", "clients"]));
+      const monitors = JSON.parse(await execAsync(["hyprctl", "-j", "monitors"]));
+      const clientsByAddress = new Map(clients.map((client) => [
+        normalizeWindowAddress(client?.address),
+        client,
+      ]));
+
+      const renderableAnimations = activeWindowAnimations
+        .map((animation) => {
+          const effect = OPEN_WINDOW_EFFECTS[animation.effectId];
+          const elapsed = now - animation.startedAt;
+          const linearProgress = Math.min(1, Math.max(0, elapsed / (effect.durationMs * durationScale)));
+          const client = clientsByAddress.get(animation.address) ?? null;
+          const nextBox = client && shouldAnimateWindow(client)
+            ? normalizeWindowBoxFromState(client, monitors) ?? animation.box
+            : animation.box;
+
+          return {
+            ...animation,
+            box: nextBox,
+            linearProgress,
+            progress: getEffectEase(animation.effectId)(linearProgress),
+          };
+        })
+        .filter(({ linearProgress }) => linearProgress < 1);
+
+      activeWindowAnimations = renderableAnimations.map(({ linearProgress, ...animation }) => animation);
+
+      if (activeWindowAnimations.length === 0) {
+        await syncScreenShader();
+        return;
+      }
+
+      const shader = buildOpenWindowShader(template, activeWindowAnimations);
+      await Utils.writeFile(shader, openWindowRuntimePath);
+      await applyScreenShader(openWindowRuntimePath);
+    } catch (error) {
+      print(error);
+    }
+  };
+
+  const ensureOpenWindowAnimationLoop = () => {
+    if (animationLoopRunning) {
+      return;
+    }
+
+    animationLoopRunning = true;
+
+    (async () => {
+      try {
+        const frameDelay = Math.max(4, Math.round(1000 / OPEN_WINDOW_ANIMATION_STEPS));
+
+        while (activeWindowAnimations.length > 0) {
+          await renderActiveWindowAnimations();
+
+          if (activeWindowAnimations.length > 0) {
+            await wait(Utils, frameDelay);
+          }
+        }
+      } catch (error) {
+        print(error);
+      } finally {
+        animationLoopRunning = false;
+        if (activeWindowAnimations.length === 0) {
+          await syncScreenShader();
+        } else {
+          ensureOpenWindowAnimationLoop();
+        }
+      }
+    })();
+  };
+
+  const playOpenWindowAnimation = async (windowAddress = "") => {
+    if (!openWindowAnimationEnabled) {
+      return;
+    }
+
+    try {
+      const targetWindow = await getStableClientForAnimation(execAsync, Utils, windowAddress);
+      if (!shouldAnimateWindow(targetWindow)) {
+        return;
+      }
+
+      const normalizedBox = await normalizeWindowBox(execAsync, targetWindow);
+      if (!normalizedBox) {
+        return;
+      }
+
+      const normalizedAddress = normalizeWindowAddress(windowAddress);
+      const effect = OPEN_WINDOW_EFFECTS[selectedOpenWindowEffect];
+      const effectState = effect.createState?.(targetWindow, normalizedAddress) ?? {};
+
+      activeWindowAnimations = activeWindowAnimations
+        .filter((animation) => animation.address !== normalizedAddress)
+        .concat({
+          address: normalizedAddress,
+          effectId: selectedOpenWindowEffect,
+          box: normalizedBox,
+          startedAt: Date.now(),
+          ...effectState,
+        })
+        .slice(-MAX_ACTIVE_OPEN_WINDOW_ANIMATIONS);
+
+      ensureOpenWindowAnimationLoop();
+    } catch (error) {
+      print(error);
+    }
+  };
+
+  const stopOpenWindowAnimation = async (windowAddress = "") => {
+    const normalizedAddress = normalizeWindowAddress(windowAddress);
+    if (!normalizedAddress) {
+      return;
+    }
+
+    const nextAnimations = activeWindowAnimations
+      .filter((animation) => animation.address !== normalizedAddress);
+
+    if (nextAnimations.length === activeWindowAnimations.length) {
+      return;
+    }
+
+    activeWindowAnimations = nextAnimations;
+
+    if (activeWindowAnimations.length === 0) {
+      await syncScreenShader();
+    }
+  };
+
+  const startHyprlandEventStream = () => {
+    hyprlandEventStream?.force_exit();
+    hyprlandEventStream = Utils.subprocess(
       [
         "python3",
         "-u",
@@ -75,9 +241,22 @@ export const start_hyprland_shader_sync = (screen_shader_path) => {
             continue;
           }
 
-          const [eventName] = line.split(">>");
-          if (watched_hyprland_events.has(eventName)) {
-            sync_screen_shader();
+          const [eventName, eventData = ""] = line.split(">>");
+          if (eventName === "openwindow" && openWindowAnimationEnabled) {
+            const [windowAddress] = eventData.split(",");
+            playOpenWindowAnimation(windowAddress);
+            continue;
+          }
+
+          if (eventName === "closewindow") {
+            const [windowAddress] = eventData.split(",");
+            stopOpenWindowAnimation(windowAddress);
+            syncScreenShader();
+            continue;
+          }
+
+          if (watchedHyprlandEvents.has(eventName)) {
+            syncScreenShader();
           }
         }
       },
@@ -85,10 +264,10 @@ export const start_hyprland_shader_sync = (screen_shader_path) => {
     );
   };
 
-  start_hyprland_event_stream();
-  sync_screen_shader();
+  startHyprlandEventStream();
+  syncScreenShader();
 
   return () => {
-    hyprland_event_stream?.force_exit();
+    hyprlandEventStream?.force_exit();
   };
 };

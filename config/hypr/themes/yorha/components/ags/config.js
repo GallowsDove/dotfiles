@@ -26,8 +26,22 @@ globalThis.WHICH = WHICH;
 
 let top_bar_height = 0;
 let bottom_bar_height = 0;
+const OPEN_WINDOW_ANIMATION = "settings_burst_center_radial";
+const OPEN_WINDOW_ANIMATION_DURATION_SCALE = 1;
 const screen_shader_path = `${themedir}/components/gridlines.frag`;
-start_hyprland_shader_sync(screen_shader_path);
+const open_window_scanline_template_path = OPEN_WINDOW_ANIMATION !== "none"
+  ? `${themedir}/components/window_open_scanline.frag`
+  : "";
+const open_window_scanline_runtime_path = OPEN_WINDOW_ANIMATION !== "none"
+  ? "/tmp/yorha-window-open-scanline.frag"
+  : "";
+start_hyprland_shader_sync(
+  screen_shader_path,
+  open_window_scanline_template_path,
+  open_window_scanline_runtime_path,
+  OPEN_WINDOW_ANIMATION,
+  OPEN_WINDOW_ANIMATION_DURATION_SCALE,
+);
 
 const apply_reserved = () =>
   execAsync(
@@ -174,4 +188,3 @@ export default {
     BottomBar(),
   ],
 };
-

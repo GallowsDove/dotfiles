@@ -14,5 +14,5 @@ TRAPUSR2() {
 if [[ -o interactive ]]; then
     eval "$(starship init zsh)"
     theme
-    sttt scanline --scanline-reverse true -d 0.5
+    # sttt scanline --scanline-reverse true -d 0.5
 fi

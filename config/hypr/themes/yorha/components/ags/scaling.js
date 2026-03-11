@@ -21,4 +21,4 @@ export const button_slider_width = 20*scale;
 export const button_slider_padding = 20*scale;
 
 export const workspace_width = SCREEN_WIDTH - 4*button_pointer_size;
-export const workspace_height = 65*scale;
+export const workspace_height = 70*scale;

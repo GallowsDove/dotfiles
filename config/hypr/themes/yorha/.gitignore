@@ -7,3 +7,4 @@ np
 os
 pywal
 subprocess
+components/ags/windows/settings/app-launch-counts.json

@@ -1,1 +1,49 @@
-{"jetbrains-idea.desktop":47,"librewolf.desktop":13,"nemo.desktop":11,"yazi.desktop":2,"steam.desktop":2,"org.strawberrymusicplayer.strawberry.desktop":9,"code.desktop":5,"org.gnome.Nautilus.desktop":1,"beekeeper-studio.desktop":1,"chromium.desktop":1}
+{
+  "version": 2,
+  "entries": {
+    "jetbrains-idea.desktop": {
+      "score": 89,
+      "lastUpdated": 1773194605043
+    },
+    "librewolf.desktop": {
+      "score": 16,
+      "lastUpdated": 1773194605043
+    },
+    "nemo.desktop": {
+      "score": 12,
+      "lastUpdated": 1773194605043
+    },
+    "yazi.desktop": {
+      "score": 2,
+      "lastUpdated": 1773194605043
+    },
+    "steam.desktop": {
+      "score": 2,
+      "lastUpdated": 1773194605043
+    },
+    "org.strawberrymusicplayer.strawberry.desktop": {
+      "score": 11,
+      "lastUpdated": 1773194605043
+    },
+    "code.desktop": {
+      "score": 17.99728147822372,
+      "lastUpdated": 1773194884127
+    },
+    "org.gnome.Nautilus.desktop": {
+      "score": 1,
+      "lastUpdated": 1773194605043
+    },
+    "beekeeper-studio.desktop": {
+      "score": 1,
+      "lastUpdated": 1773194605043
+    },
+    "chromium.desktop": {
+      "score": 1,
+      "lastUpdated": 1773194605043
+    },
+    "kitty.desktop": {
+      "score": 1,
+      "lastUpdated": 1773194605043
+    }
+  }
+}

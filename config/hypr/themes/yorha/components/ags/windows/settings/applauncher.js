@@ -26,15 +26,81 @@ const FOCUS_RETRY_COUNT = 20;
 const FOCUS_RETRY_DELAY_MS = 100;
 const KITTY_COMMAND = "kitty";
 const APP_LAUNCH_HISTORY_PATH = `${App.configDir}/app-launch-counts.json`;
+const APP_LAUNCH_HISTORY_VERSION = 2;
+const APP_LAUNCH_HALF_LIFE_DAYS = 14;
+const APP_LAUNCH_HALF_LIFE_MS = APP_LAUNCH_HALF_LIFE_DAYS * 24 * 60 * 60 * 1000;
 
-let launchCounts = {};
-let cachedAppList = null;
+let launchHistory = { version: APP_LAUNCH_HISTORY_VERSION, entries: {} };
 
-try {
-  launchCounts = JSON.parse(Utils.readFile(APP_LAUNCH_HISTORY_PATH));
-} catch {
-  launchCounts = {};
-}
+const persistLaunchHistory = () =>
+  Utils.writeFile(
+    JSON.stringify(launchHistory, null, 2),
+    APP_LAUNCH_HISTORY_PATH,
+  ).catch(console.log);
+
+const normalizeTimestamp = (value, fallback) => {
+  const timestamp = Number(value);
+  return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : fallback;
+};
+
+const normalizeScore = (value) => {
+  const score = Number(value);
+  return Number.isFinite(score) && score > 0 ? score : 0;
+};
+
+const normalizeLaunchEntry = (entry, now) => {
+  if (typeof entry === "number") {
+    return {
+      score: normalizeScore(entry),
+      lastUpdated: now,
+    };
+  }
+
+  return {
+    score: normalizeScore(entry?.score),
+    lastUpdated: normalizeTimestamp(entry?.lastUpdated, now),
+  };
+};
+
+const loadLaunchHistory = () => {
+  const now = Date.now();
+
+  try {
+    const parsed = JSON.parse(Utils.readFile(APP_LAUNCH_HISTORY_PATH));
+
+    if (parsed?.version === APP_LAUNCH_HISTORY_VERSION && parsed?.entries && typeof parsed.entries === "object") {
+      launchHistory = {
+        version: APP_LAUNCH_HISTORY_VERSION,
+        entries: Object.fromEntries(
+          Object.entries(parsed.entries)
+            .map(([appKey, entry]) => [appKey, normalizeLaunchEntry(entry, now)])
+            .filter(([, entry]) => entry.score > 0),
+        ),
+      };
+      persistLaunchHistory();
+      return;
+    }
+
+    if (parsed && typeof parsed === "object") {
+      launchHistory = {
+        version: APP_LAUNCH_HISTORY_VERSION,
+        entries: Object.fromEntries(
+          Object.entries(parsed)
+            .map(([appKey, entry]) => [appKey, normalizeLaunchEntry(entry, now)])
+            .filter(([, entry]) => entry.score > 0),
+        ),
+      };
+      persistLaunchHistory();
+      return;
+    }
+  } catch {
+    // Ignore missing or malformed history and start fresh.
+  }
+
+  launchHistory = { version: APP_LAUNCH_HISTORY_VERSION, entries: {} };
+};
+
+loadLaunchHistory();
 
 const getAppKey = (appInfo) =>
   appInfo?.app?.get_id?.() ||
@@ -43,34 +109,56 @@ const getAppKey = (appInfo) =>
   appInfo?.name ||
   "";
 
-const getLaunchCount = (appInfo) => launchCounts[getAppKey(appInfo)] || 0;
+const getLaunchEntry = (appInfo) =>
+  launchHistory.entries[getAppKey(appInfo)] || null;
 
-const sortAppsByLaunchCount = (apps) =>
-  apps.slice().sort((left, right) => {
-    const countDelta = getLaunchCount(right) - getLaunchCount(left);
-    if (countDelta !== 0) {
-      return countDelta;
+const getDecayedLaunchScore = (entry, now = Date.now()) => {
+  if (!entry) {
+    return 0;
+  }
+
+  const elapsed = Math.max(0, now - normalizeTimestamp(entry.lastUpdated, now));
+  return normalizeScore(entry.score) * Math.pow(0.5, elapsed / APP_LAUNCH_HALF_LIFE_MS);
+};
+
+const sortAppsByLaunchScore = (apps) => {
+  const now = Date.now();
+
+  return apps.slice().sort((left, right) => {
+    const scoreDelta = getDecayedLaunchScore(getLaunchEntry(right), now)
+      - getDecayedLaunchScore(getLaunchEntry(left), now);
+    if (scoreDelta !== 0) {
+      return scoreDelta;
     }
 
     return (left.name || "").localeCompare(right.name || "");
   });
+};
 
-const persistLaunchCounts = () =>
-  Utils.writeFile(JSON.stringify(launchCounts), APP_LAUNCH_HISTORY_PATH).catch(console.log);
+const touchLaunchEntry = (appKey, now = Date.now()) => {
+  const currentEntry = normalizeLaunchEntry(launchHistory.entries[appKey], now);
+  const nextScore = getDecayedLaunchScore(currentEntry, now);
 
-const getAppList = () => {
-  if (!cachedAppList) {
-    cachedAppList = sortAppsByLaunchCount(Applications.list.slice());
+  if (nextScore <= 0) {
+    delete launchHistory.entries[appKey];
+    return null;
   }
 
-  return cachedAppList;
+  const nextEntry = {
+    score: nextScore,
+    lastUpdated: now,
+  };
+  launchHistory.entries[appKey] = nextEntry;
+  return nextEntry;
 };
+
+const getAppList = () => sortAppsByLaunchScore(Applications.list.slice());
 const getSearchResults = (query) => {
   if (!query) {
     return getAppList();
   }
 
-  return sortAppsByLaunchCount(Applications.query(query));
+  return sortAppsByLaunchScore(Applications.query(query));
 };
 
 const getCommandProgram = (command) => command?.trim().split(/\s+/)[0] || null;
@@ -469,9 +557,15 @@ export const AppLauncher = ({
       return;
     }
 
-    launchCounts[appKey] = getLaunchCount(appInfo) + 1;
-    cachedAppList = null;
-    persistLaunchCounts();
+    const now = Date.now();
+    const normalizedEntry = touchLaunchEntry(appKey, now);
+    const nextScore = (normalizedEntry?.score || 0) + 1;
+
+    launchHistory.entries[appKey] = {
+      score: nextScore,
+      lastUpdated: now,
+    };
+    persistLaunchHistory();
   };
 
   const launchApp = async (appInfo, button = null) => {

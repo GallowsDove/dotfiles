@@ -99,8 +99,6 @@ const draw_triangle = (context, center_x,center_y, width, height, color, inverte
 }
 
 const NierGeom = ({
-  DESTRUCTION = false,
-
   cell_width = 512,
   cell_height = round(sqrt(cell_width*cell_width-(cell_width/2)*(cell_width/2))),
 
@@ -118,7 +116,6 @@ const NierGeom = ({
   opacity_step = 10,
   vertex_step = 10,
 
-  first_update = 0,
   entered = false,
 }) => {
   let animation_id = 0;
@@ -206,8 +203,8 @@ const NierGeom = ({
 
     draw_t_1 = start
     final_draw_1 = false;
-    opacity_step = 2;
-    vertex_step = 2;
+    opacity_step = 8;
+    vertex_step = 5;
 
     let [center_x,center_y] = [0,rand_int(rows/4,3*rows/4)];
 
@@ -241,7 +238,7 @@ const NierGeom = ({
             t_left = 0;
             [c_right,t_right,c_y,t_y] = [1,1,1,1]
           }
-          t_opacity = 0
+          t_opacity = 0.15
         }
         cells_1[i] = [c_opacity,t_opacity, c_left,t_left ,c_right,t_right ,c_y,t_y,inited,s_override];
       }
