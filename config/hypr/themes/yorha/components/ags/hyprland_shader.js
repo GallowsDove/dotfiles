@@ -10,7 +10,6 @@ import {
   getStableClientForAnimation,
   isTrueFullscreen,
   normalizeWindowAddress,
-  normalizeWindowBox,
   normalizeWindowBoxFromState,
   shouldAnimateWindow,
   wait,
@@ -38,6 +37,8 @@ export const start_hyprland_shader_sync = (
   let hyprlandEventStream = null;
   let animationLoopRunning = false;
   let activeWindowAnimations = [];
+  let cachedOpenWindowTemplate = "";
+  let cachedMonitors = null;
 
   const selectedOpenWindowEffect = OPEN_WINDOW_EFFECTS[openWindowAnimation]
     ? openWindowAnimation
@@ -59,6 +60,31 @@ export const start_hyprland_shader_sync = (
     }
   };
 
+  const getOpenWindowTemplate = () => {
+    if (!openWindowAnimationEnabled) {
+      return "";
+    }
+
+    if (!cachedOpenWindowTemplate) {
+      cachedOpenWindowTemplate = Utils.readFile(openWindowTemplatePath) || "";
+    }
+
+    return cachedOpenWindowTemplate;
+  };
+
+  const refreshCachedMonitors = async () => {
+    try {
+      cachedMonitors = JSON.parse(await execAsync(["hyprctl", "-j", "monitors"]));
+    } catch (error) {
+      print(error);
+      cachedMonitors = null;
+    }
+
+    return cachedMonitors;
+  };
+
+  const getCachedMonitors = async () => cachedMonitors ?? refreshCachedMonitors();
+
   const syncScreenShader = async () => {
     if (animationLoopRunning || activeWindowAnimations.length > 0) {
       return;
@@ -78,14 +104,17 @@ export const start_hyprland_shader_sync = (
         return;
       }
 
-      const template = Utils.readFile(openWindowTemplatePath);
+      const template = getOpenWindowTemplate();
       if (!template) {
         return;
       }
 
       const now = Date.now();
       const clients = JSON.parse(await execAsync(["hyprctl", "-j", "clients"]));
-      const monitors = JSON.parse(await execAsync(["hyprctl", "-j", "monitors"]));
+      const monitors = await getCachedMonitors();
+      if (!monitors) {
+        return;
+      }
       const clientsByAddress = new Map(clients.map((client) => [
         normalizeWindowAddress(client?.address),
         client,
@@ -167,7 +196,10 @@ export const start_hyprland_shader_sync = (
         return;
       }
 
-      const normalizedBox = await normalizeWindowBox(execAsync, targetWindow);
+      const monitors = await getCachedMonitors();
+      const normalizedBox = monitors
+        ? normalizeWindowBoxFromState(targetWindow, monitors)
+        : null;
       if (!normalizedBox) {
         return;
       }
@@ -255,6 +287,11 @@ export const start_hyprland_shader_sync = (
             continue;
           }
 
+          if (eventName === "configreloaded") {
+            cachedOpenWindowTemplate = "";
+            refreshCachedMonitors();
+          }
+
           if (watchedHyprlandEvents.has(eventName)) {
             syncScreenShader();
           }
@@ -265,6 +302,7 @@ export const start_hyprland_shader_sync = (
   };
 
   startHyprlandEventStream();
+  refreshCachedMonitors();
   syncScreenShader();
 
   return () => {

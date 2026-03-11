@@ -1,5 +1,5 @@
 export const MAX_ACTIVE_OPEN_WINDOW_ANIMATIONS = 4;
-export const OPEN_WINDOW_ANIMATION_STEPS = 144;
+export const OPEN_WINDOW_ANIMATION_STEPS = 90;
 
 const createDirectionalSettingsBurst = (direction) => {
   const isVertical = direction === "top" || direction === "bottom";

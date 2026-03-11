@@ -2,7 +2,7 @@
 
 [templates.niri]
 input_path = '/home/arch/.config/matugen/templates/niri-colors.kdl'
-output_path = '/home/arch/.cache/matugen/templates/niri/custom-colors.kdl'
+output_path = '/home/arch/.cache/matugen/templates/niri/matugen-colors.kdl'
 post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py niri'
 
 [templates.nvim]
@@ -12,12 +12,12 @@ post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py 
 
 [templates.gtk3]
 input_path = '/home/arch/.config/matugen/templates/gtk-colors.css'
-output_path = '/home/arch/.cache/matugen/templates/gtk/dank-colors-gtk3.css'
+output_path = '/home/arch/.cache/matugen/templates/gtk/matugen-colors-gtk3.css'
 post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py gtk3'
 
 [templates.gtk4]
 input_path = '/home/arch/.config/matugen/templates/gtk-colors.css'
-output_path = '/home/arch/.cache/matugen/templates/gtk/dank-colors-gtk4.css'
+output_path = '/home/arch/.cache/matugen/templates/gtk/matugen-colors-gtk4.css'
 post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py gtk4'
 
 [templates.qt5ct]
@@ -51,10 +51,15 @@ post_hook = 'python3 /home/arch/.config/matugen/scripts/build_jetbrains_theme.py
 
 [templates.vesktop]
 input_path = '/home/arch/.config/matugen/templates/vesktop.css'
-output_path = '/home/arch/.cache/matugen/templates/vesktop/dank-discord.css'
+output_path = '/home/arch/.cache/matugen/templates/vesktop/matugen-discord.css'
 post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py vesktop'
 
 [templates.fcitx5]
 input_path = '/home/arch/.config/matugen/templates/fcitx5-theme.conf'
 output_path = '/home/arch/.cache/matugen/templates/fcitx5/theme.conf'
 post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py fcitx5'
+
+[templates.kitty]
+input_path = '/home/arch/.config/matugen/templates/kitty.conf'
+output_path = '/home/arch/.cache/matugen/templates/kitty/matugen.conf'
+post_hook = 'python3 /home/arch/.config/matugen/scripts/sync_cached_template.py kitty'

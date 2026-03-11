@@ -126,6 +126,8 @@ const Bar = ({ monitor } = {}) => {
 
 execAsync(`agsv1 -b player -c ${App.configDir}/windows/player/player.js`);
 execAsync(`agsv1 -b settings -c ${App.configDir}/windows/settings/settings.js`);
+execAsync(`agsv1 -b bg_bitwarden -c ${App.configDir}/windows/bitwarden/bitwardenbg.js`);
+execAsync(`agsv1 -b bitwarden -c ${App.configDir}/windows/bitwarden/bitwarden.js`);
 dark.connect("changed", () => {
   print("dark changed",dark.value);
   let colors_css_path = `${App.configDir}/style/color.scss`;
@@ -143,6 +145,7 @@ dark.connect("changed", () => {
   execAsync(`agsv1 -b player -r dark.value=${dark.value}`).then(print);
   execAsync(`agsv1 -b notify -r dark.value=${dark.value}`).then(print);
   execAsync(`agsv1 -b settings -r dark.value=${dark.value}`).then(print);
+  execAsync(`agsv1 -b bitwarden -r dark.value=${dark.value}`).then(print);
 
   let hyprconf = Utils.readFile(`${themedir}/theme.conf`);
   if (dark.value) {

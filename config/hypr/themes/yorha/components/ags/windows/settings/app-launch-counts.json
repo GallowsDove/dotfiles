@@ -6,8 +6,8 @@
       "lastUpdated": 1773194605043
     },
     "librewolf.desktop": {
-      "score": 16,
-      "lastUpdated": 1773194605043
+      "score": 18.42238103192712,
+      "lastUpdated": 1773258528739
     },
     "nemo.desktop": {
       "score": 12,
@@ -18,16 +18,16 @@
       "lastUpdated": 1773194605043
     },
     "steam.desktop": {
-      "score": 2,
-      "lastUpdated": 1773194605043
+      "score": 4.928564873424179,
+      "lastUpdated": 1773257225968
     },
     "org.strawberrymusicplayer.strawberry.desktop": {
-      "score": 11,
-      "lastUpdated": 1773194605043
+      "score": 20.605488311469927,
+      "lastUpdated": 1773257213237
     },
     "code.desktop": {
-      "score": 17.99728147822372,
-      "lastUpdated": 1773194884127
+      "score": 18.352048707237504,
+      "lastUpdated": 1773258597380
     },
     "org.gnome.Nautilus.desktop": {
       "score": 1,
@@ -44,6 +44,10 @@
     "kitty.desktop": {
       "score": 1,
       "lastUpdated": 1773194605043
+    },
+    "vesktop.desktop": {
+      "score": 1,
+      "lastUpdated": 1773259421853
     }
   }
 }
