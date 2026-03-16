@@ -9,6 +9,7 @@ import {
 } from "../util.js";
 import { NierButton } from "./buttons.js";
 const { Gdk } = imports.gi;
+const Pango = imports.gi.Pango;
 const { Label, EventBox, Box, Icon } = Widget;
 
 export const NierDropDownButton = ({
@@ -16,6 +17,7 @@ export const NierDropDownButton = ({
   classNames = [],
   containerClassNames = [],
   containerConnections = [],
+  connections = [],
   passedOnHoverLost = async (self) => {
     return true;
   },
@@ -25,11 +27,15 @@ export const NierDropDownButton = ({
   options = Variable([], {}),
   size = button_label_2,
   current = Variable("", {}),
+  current_max_chars = 22,
+  option_max_chars = 28,
+  onChange = async () => {},
   popup_window = null,
   in_focus = false,
   popup_in_focus = false,
   popup_x_offset = 0,
   useAssetsDir = assetsDir,
+  setup = () => {},
   ...props
 }) => {
   const closePopup = () => {
@@ -45,6 +51,7 @@ export const NierDropDownButton = ({
   return NierButton({
     useAssetsDir,
     label,
+    homogeneous_button: false,
     classNames: ["nier-dropdown-button", ...classNames],
     containerClassNames: [
       "nier-dropdown-button-container",
@@ -58,6 +65,18 @@ export const NierDropDownButton = ({
         "nier-button-box-hover-from-selected"
       );
       return true;
+    },
+    setup: (self) => {
+      setup(self);
+
+      for (const [source, callback, signal] of connections) {
+        if (typeof source === "number") {
+          self.poll(source, () => callback(self));
+          continue;
+        }
+
+        self.hook(source, () => callback(self), signal);
+      }
     },
     handleClick: async (self, event) => {
       self.child.classNames = arradd(
@@ -79,7 +98,9 @@ export const NierDropDownButton = ({
         coord_y: alloc.y,
         button: self,
         current,
+        onChange,
         options,
+        option_max_chars,
         useAssetsDir,
         closeMenu: closePopup,
         onClose: () => {
@@ -90,10 +111,21 @@ export const NierDropDownButton = ({
       registerActivePopup(closePopup, popup_window);
     },
     children: [
-      Label({
-        classNames: ["nier-option-item"],
+      Box({
+        hexpand: true,
         hpack: "end",
-        binds: [["label", current, "value"]],
+        child: Label({
+          classNames: ["nier-option-item"],
+          hpack: "end",
+          max_width_chars: current_max_chars,
+          xalign: 1,
+          wrap: false,
+          binds: [["label", current, "value"]],
+          setup: (self) =>
+            Utils.timeout(1, () => {
+              self.set_ellipsize(Pango.EllipsizeMode.END);
+            }),
+        }),
       }),
     ],
     ...props,
@@ -107,7 +139,9 @@ export const NierSelectMenu = ({
   spacing = 20,
   button = null,
   current,
+  onChange = async () => {},
   options,
+  option_max_chars = 28,
   useAssetsDir,
   closeMenu = () => {},
   onClose = () => {},
@@ -173,6 +207,8 @@ export const NierSelectMenu = ({
                   spacing,
                   button,
                   current,
+                  onChange,
+                  option_max_chars,
                   useAssetsDir,
                   closeMenu,
                 });
@@ -191,6 +227,8 @@ export const NierOptionItem = ({
   spacing = 20,
   button,
   current,
+  onChange = async () => {},
+  option_max_chars = 28,
   useAssetsDir,
   closeMenu,
 }) => {
@@ -240,6 +278,9 @@ export const NierOptionItem = ({
       EventBox({
         onPrimaryClick: async (self) => {
           current.setValue(label);
+          await onChange(label).catch((error) => {
+            console.log(error);
+          });
           closeMenu();
           return true;
         },
@@ -254,7 +295,18 @@ export const NierOptionItem = ({
           }),
         child: Box({
           classNames: ["nier-button"],
-          children: [Label({ label })],
+          children: [
+            Label({
+              label,
+              max_width_chars: option_max_chars,
+              xalign: 0,
+              wrap: false,
+              setup: (self) =>
+                Utils.timeout(1, () => {
+                  self.set_ellipsize(Pango.EllipsizeMode.END);
+                }),
+            }),
+          ],
         }),
       }),
       Icon({

@@ -4,276 +4,342 @@ const require = async (file) => (await import(resource(file))).default;
 const App = await require("app");
 const Widget = await require("widget");
 const Utils = await import(resource("utils"));
+const { SCREEN_WIDTH, SCREEN_HEIGHT } = await import("../../util.js");
 
-const { max, round, abs, sqrt, random } = Math;
-
+const { max, round, abs, sqrt } = Math;
 const { Window, EventBox, Overlay, Scrollable } = Widget;
-const {exec} = Utils;
+const { Gtk } = imports.gi;
 
 globalThis.App = App;
 
-const SCREEN_WIDTH = Number(
-    exec(
-      `bash -c "xrandr --current | grep '*' | uniq | awk '{print $1}' | cut -d 'x' -f1 | head -1"`
-    )
-  );
-const SCREEN_HEIGHT = Number(
-    exec(
-      `bash -c "xrandr --current | grep '*' | uniq | awk '{print $1}' | cut -d 'x' -f2 | head -1"`
-    )
-  );
-
-const rand_int = (a,b) => round(random()*(b-a)+a);
-const dist_from_center = (x,y,center_x,center_y,width,height) => {
-  let x_offset = abs(x-center_x)/2;
-  let y_offset = abs(y-center_y);
-
-  return (x_offset**2 + y_offset**2)**0.5;
-}
-
-let dark = false
-
+let dark = false;
 await Utils.execAsync("agsv1 -r dark.value").then((res) => {
-  dark = res == "true";
+  dark = res === "true";
 }).catch(() => {});
 
-let colors = dark?[218/255, 212/255, 187/255]:[87/255, 84/255, 74/255];
+const colors = dark ? [218 / 255, 212 / 255, 187 / 255] : [87 / 255, 84 / 255, 74 / 255];
+const OPEN_ANIMATION_DURATION_MS = 850;
+const CLOSE_ANIMATION_DURATION_MS = 800;
+const OPEN_OPACITY_STEP = 10;
+const CLOSE_OPACITY_STEP = 5;
+const OPEN_VERTEX_STEP = 2;
+const CLOSE_VERTEX_STEP = 3;
 
-const parentConfigDir = App.configDir.split("/").slice(0,-2).join("/");
-
-const {Gtk} = imports.gi;
-
-const draw_triangle = (context, center_x,center_y, width, height, color, inverted, leftratio,rightratio,yratio) => {
-  if (leftratio <= 0.001 || rightratio <= 0.001 || yratio <= 0.001) {
-    return
+const drawTriangle = (
+  context,
+  centerX,
+  centerY,
+  width,
+  height,
+  color,
+  inverted,
+  leftRatio,
+  rightRatio,
+  yRatio
+) => {
+  if (leftRatio <= 0.001 || rightRatio <= 0.001 || yRatio <= 0.001) {
+    return;
   }
-    
+
   context.setSourceRGBA(...color);
-  let leftpoint,rightpoint,ypoint;
+  let leftPoint;
+  let rightPoint;
+  let yPoint;
 
   if (inverted) {
-      leftpoint = [center_x-width/2,center_y+height/2];
-      rightpoint = [center_x+width/2,center_y+height/2];
-      ypoint = [center_x,center_y-height/2];
-  }
-  else {
-      leftpoint = [center_x-width/2,center_y-height/2];
-      rightpoint = [center_x+width/2,center_y-height/2];
-      ypoint = [center_x,center_y+height/2];
+    leftPoint = [centerX - width / 2, centerY + height / 2];
+    rightPoint = [centerX + width / 2, centerY + height / 2];
+    yPoint = [centerX, centerY - height / 2];
+  } else {
+    leftPoint = [centerX - width / 2, centerY - height / 2];
+    rightPoint = [centerX + width / 2, centerY - height / 2];
+    yPoint = [centerX, centerY + height / 2];
   }
 
-  if (leftratio < 0.9){
-    let vector_left_right = [(rightpoint[0]-leftpoint[0])*(1-leftratio),(rightpoint[1]-leftpoint[1])*(1-leftratio)];
-    let vector_left_y = [(ypoint[0]-leftpoint[0])*(1-leftratio),(ypoint[1]-leftpoint[1])*(1-leftratio)];
-    leftpoint = [
-      leftpoint[0]+vector_left_right[0]/2+vector_left_y[0]/2,
-      leftpoint[1]+vector_left_right[1]/2+vector_left_y[1]/2
+  if (leftRatio < 0.999) {
+    const leftRight = [
+      (rightPoint[0] - leftPoint[0]) * (1 - leftRatio),
+      (rightPoint[1] - leftPoint[1]) * (1 - leftRatio),
+    ];
+    const leftY = [
+      (yPoint[0] - leftPoint[0]) * (1 - leftRatio),
+      (yPoint[1] - leftPoint[1]) * (1 - leftRatio),
+    ];
+    leftPoint = [
+      leftPoint[0] + leftRight[0] / 2 + leftY[0] / 2,
+      leftPoint[1] + leftRight[1] / 2 + leftY[1] / 2,
     ];
   }
-  if (rightratio < 0.9){
-    let vector_right_left = [(leftpoint[0]-rightpoint[0])*(1-rightratio),(leftpoint[1]-rightpoint[1])*(1-rightratio)];
-    let vector_right_y = [(ypoint[0]-rightpoint[0])*(1-rightratio),(ypoint[1]-rightpoint[1])*(1-rightratio)];
-    rightpoint = [
-      rightpoint[0]+vector_right_left[0]/2+vector_right_y[0]/2,
-      rightpoint[1]+vector_right_left[1]/2+vector_right_y[1]/2
+
+  if (rightRatio < 0.999) {
+    const rightLeft = [
+      (leftPoint[0] - rightPoint[0]) * (1 - rightRatio),
+      (leftPoint[1] - rightPoint[1]) * (1 - rightRatio),
+    ];
+    const rightY = [
+      (yPoint[0] - rightPoint[0]) * (1 - rightRatio),
+      (yPoint[1] - rightPoint[1]) * (1 - rightRatio),
+    ];
+    rightPoint = [
+      rightPoint[0] + rightLeft[0] / 2 + rightY[0] / 2,
+      rightPoint[1] + rightLeft[1] / 2 + rightY[1] / 2,
     ];
   }
-  if (yratio < 0.9){
-    let vector_y_left = [(leftpoint[0]-ypoint[0])*(1-yratio),(leftpoint[1]-ypoint[1])*(1-yratio)];
-    let vector_y_right = [(rightpoint[0]-ypoint[0])*(1-yratio),(rightpoint[1]-ypoint[1])*(1-yratio)];
-    ypoint = [
-        ypoint[0]+vector_y_left[0]/2+vector_y_right[0]/2,
-        ypoint[1]+vector_y_left[1]/2+vector_y_right[1]/2
+
+  if (yRatio < 0.999) {
+    const yLeft = [
+      (leftPoint[0] - yPoint[0]) * (1 - yRatio),
+      (leftPoint[1] - yPoint[1]) * (1 - yRatio),
     ];
-  } 
+    const yRight = [
+      (rightPoint[0] - yPoint[0]) * (1 - yRatio),
+      (rightPoint[1] - yPoint[1]) * (1 - yRatio),
+    ];
+    yPoint = [
+      yPoint[0] + yLeft[0] / 2 + yRight[0] / 2,
+      yPoint[1] + yLeft[1] / 2 + yRight[1] / 2,
+    ];
+  }
 
-  
-
-  
-
-  context.moveTo(...leftpoint);
-  context.lineTo(...rightpoint);
-  context.lineTo(...ypoint);
-
+  context.moveTo(...leftPoint);
+  context.lineTo(...rightPoint);
+  context.lineTo(...yPoint);
   context.fill();
-}
+};
 
-const NierGeom = ({
-  cell_width = 512,
-  cell_height = round(sqrt(cell_width*cell_width-(cell_width/2)*(cell_width/2))),
+const distanceFromWaveFront = (x, y, screenCenterY) => x + abs(y - screenCenterY) * 0.25;
 
-  cell_grid_1 = new Gtk.DrawingArea(),
-  wait_for_draw_1 = false,
-  wait_for_complete_draw_1 = false,
-  draw_t_1 = 0,
-  draw_duration_1 = 1000,
-  final_draw_1 = true,
-  gap = 0,
-  rows = round(SCREEN_HEIGHT/cell_height) + 1,
-  cols = round(SCREEN_WIDTH*2/cell_width) + 1,
-  cells_1 = Array.from({ length: rows*cols }, (_, i) => {return [0,0 ,0,0 ,0,0 ,0,0, 0,0]}),
+const getTrianglePoints = (centerX, centerY, width, height, inverted) => {
+  if (inverted) {
+    return {
+      leftPoint: [centerX - width / 2, centerY + height / 2],
+      rightPoint: [centerX + width / 2, centerY + height / 2],
+      yPoint: [centerX, centerY - height / 2],
+    };
+  }
 
-  opacity_step = 10,
-  vertex_step = 10,
+  return {
+    leftPoint: [centerX - width / 2, centerY - height / 2],
+    rightPoint: [centerX + width / 2, centerY - height / 2],
+    yPoint: [centerX, centerY + height / 2],
+  };
+};
 
-  entered = false,
+const getDirectionalRatios = ({
+  centerPointX,
+  centerPointY,
+  width,
+  height,
+  inverted,
+  progress,
+  opening,
 }) => {
-  let animation_id = 0;
+  const { leftPoint, rightPoint, yPoint } = getTrianglePoints(
+    centerPointX,
+    centerPointY,
+    width,
+    height,
+    inverted
+  );
+  const directionX = 1;
+  const directionY = 0;
+  const leftScore = leftPoint[0] * directionX + leftPoint[1] * directionY;
+  const rightScore = rightPoint[0] * directionX + rightPoint[1] * directionY;
+  const yScore = yPoint[0] * directionX + yPoint[1] * directionY;
+  const outerScore = max(leftScore, max(rightScore, yScore));
+  const innerScore = Math.min(leftScore, Math.min(rightScore, yScore));
+  const leftIsOuter = leftScore >= outerScore - 0.001;
+  const rightIsOuter = rightScore >= outerScore - 0.001;
+  const yIsOuter = yScore >= outerScore - 0.001;
+  const leftIsInner = leftScore <= innerScore + 0.001;
+  const rightIsInner = rightScore <= innerScore + 0.001;
+  const yIsInner = yScore <= innerScore + 0.001;
+
+  if (opening) {
+    return {
+      leftRatio: leftIsOuter ? progress : 1,
+      rightRatio: rightIsOuter ? progress : 1,
+      yRatio: yIsOuter ? progress : 1,
+    };
+  }
+
+  return {
+    leftRatio: leftIsInner ? (1 - progress) : 1,
+    rightRatio: rightIsInner ? (1 - progress) : 1,
+    yRatio: yIsInner ? (1 - progress) : 1,
+  };
+};
+
+const SettingsGeom = ({
+  cellWidth = 384,
+  cellHeight = round(sqrt(cellWidth * cellWidth - (cellWidth / 2) * (cellWidth / 2))),
+  cellGrid = new Gtk.DrawingArea(),
+  waitForDrawFrame = false,
+  waitForCompleteDraw = false,
+  drawTime = 0,
+  finalDraw = true,
+  gap = 0,
+  rows = round(SCREEN_HEIGHT / cellHeight) + 3,
+  cols = round((SCREEN_WIDTH * 2) / cellWidth) + 6,
+  cells = Array.from({ length: rows * cols }, () => [0, 0, 0, 0, 0, 0, 0, 0, false]),
+  opacityStep = 10,
+  vertexStep = 10,
+}) => {
+  let animationId = 0;
+  const renderedGridWidth = (cols - 1) * cellWidth * 0.5 + cellWidth;
+  const renderedGridHeight = (rows - 1) * cellHeight + cellHeight;
+  const gridOffsetX = -cellWidth * 1.5;
+  const gridOffsetY = (SCREEN_HEIGHT - renderedGridHeight) * 0.5 + cellHeight * 0.5;
+  const screenCenterY = SCREEN_HEIGHT * 0.5;
 
   const waitForDraw = async () => {
-    wait_for_draw_1 = true;
-    cell_grid_1.queue_draw();
-    while (wait_for_draw_1) {
-      await new Promise((r) => setTimeout(r, 1));
+    waitForDrawFrame = true;
+    cellGrid.queue_draw();
+    while (waitForDrawFrame) {
+      await new Promise((resolve) => setTimeout(resolve, 1));
     }
   };
 
   const resetCells = () => {
-    for (let i = 0; i < rows*cols; i++) {
-      cells_1[i] = [0,0 ,0,0 ,0,0 ,0,0, 0,0];
+    for (let i = 0; i < rows * cols; i += 1) {
+      cells[i] = [0, 0, 0, 0, 0, 0, 0, 0, false];
     }
-    final_draw_1 = true;
-    opacity_step = 10;
-    vertex_step = 10;
+    finalDraw = true;
+    opacityStep = OPEN_OPACITY_STEP;
+    vertexStep = OPEN_VERTEX_STEP;
   };
 
-  const runOpenAnimation = async (current_animation_id) => {
-    let start = Date.now();
-    draw_duration_1 = 1000;
-    let fps = 30;
+  const animate = async ({ opening, currentAnimationId }) => {
+    const start = Date.now();
+    const duration = opening ? OPEN_ANIMATION_DURATION_MS : CLOSE_ANIMATION_DURATION_MS;
+    const fps = 30;
+    const maxDistance =
+      distanceFromWaveFront(SCREEN_WIDTH + cellWidth * 2.5, 0, screenCenterY) + cellWidth;
 
-    draw_t_1 = start
-    final_draw_1 = false;
-    vertex_step = 2;
-
-    let [center_x,center_y] = [0,rand_int(rows/4,3*rows/4)];
-
-    let max_dist = (max(center_x,rows-center_x)**2 + max(center_y,cols-center_y)**2)**0.5 + 1;
+    drawTime = start;
+    finalDraw = false;
+    opacityStep = opening ? OPEN_OPACITY_STEP : CLOSE_OPACITY_STEP;
+    vertexStep = opening ? OPEN_VERTEX_STEP : CLOSE_VERTEX_STEP;
 
     while (true) {
-      if (current_animation_id != animation_id) {
+      if (currentAnimationId !== animationId) {
         return;
       }
 
-      let frame_start = Date.now();
-      let time_ratio = (draw_t_1 - start)/draw_duration_1;
-      for (let i = 0; i< rows*cols; i++){
-        let x = i%cols;
-        let y = (i-x)/cols;
-        let [c_opacity,t_opacity, c_left,t_left ,c_right,t_right ,c_y,t_y,inited,s_override] = cells_1[i]
-        if (s_override) {
-          entered = true;
-          return
-        }
-        let dist = dist_from_center(x,y,center_x,center_y,cols,rows)
-        if (time_ratio>1?1:dist < max_dist*time_ratio*(rand_int(50,100)/100)) {
-          if (inited == false) {
+      const frameStart = Date.now();
+      const timeRatio = (drawTime - start) / duration;
+      const progress = Math.max(0, Math.min(1, timeRatio));
+
+      for (let i = 0; i < rows * cols; i += 1) {
+        const x = i % cols;
+        const y = (i - x) / cols;
+        let [cOpacity, tOpacity, cLeft, tLeft, cRight, tRight, cY, tY, inited] = cells[i];
+        const centerPointX = gridOffsetX + x * cellWidth * 0.5;
+        const centerPointY = gridOffsetY + y * cellHeight;
+        const dist = distanceFromWaveFront(centerPointX, centerPointY, screenCenterY);
+        const threshold = maxDistance * progress;
+        const localProgress = Math.max(0, Math.min(1, (threshold - dist) / (cellWidth * 0.65)));
+        const inverted = x % 2 === 0 ? y % 2 === 1 : y % 2 === 0;
+
+        if (opening) {
+          if (dist <= threshold) {
             inited = true;
-            c_opacity = 1;
+            const ratios = getDirectionalRatios({
+              centerPointX,
+              centerPointY,
+              width: cellWidth - gap,
+              height: cellHeight - gap / 2,
+              inverted,
+              progress: localProgress,
+              opening: true,
+            });
+            tOpacity = 0.55;
+            tLeft = ratios.leftRatio;
+            tRight = ratios.rightRatio;
+            tY = ratios.yRatio;
+          } else if (inited) {
+            tOpacity = 0.55;
+            tLeft = 1;
+            tRight = 1;
+            tY = 1;
           }
-          t_opacity = 0.6
-          if (dist < 2) {
-            t_y = 1;
-            [c_left,t_left,c_right,t_right] = [1,1,1,1]
-          }else if (x < center_x) {
-            t_left = 1;
-            [c_right,t_right,c_y,t_y] = [1,1,1,1]
-          } else {
-            t_right = 1;
-            [c_left,t_left,c_y,t_y] = [1,1,1,1]
+        } else if (inited && dist <= threshold) {
+          const ratios = getDirectionalRatios({
+            centerPointX,
+            centerPointY,
+            width: cellWidth - gap,
+            height: cellHeight - gap / 2,
+            inverted,
+            progress: localProgress,
+            opening: false,
+          });
+          tOpacity = 0.55 * (1 - localProgress);
+          tLeft = ratios.leftRatio;
+          tRight = ratios.rightRatio;
+          tY = ratios.yRatio;
+          if (localProgress >= 1) {
+            tOpacity = 0;
+            tLeft = 0;
+            tRight = 0;
+            tY = 0;
           }
+        } else if (!opening && inited) {
+          tOpacity = 0.55;
+          tLeft = 1;
+          tRight = 1;
+          tY = 1;
+        } else if (!opening) {
+          tOpacity = 0;
+          tLeft = 0;
+          tRight = 0;
+          tY = 0;
         }
-        cells_1[i] = [c_opacity,t_opacity, c_left,t_left ,c_right,t_right ,c_y,t_y,inited,s_override];
+
+        cells[i] = [cOpacity, tOpacity, cLeft, tLeft, cRight, tRight, cY, tY, inited];
       }
-      final_draw_1 = true;
-      wait_for_complete_draw_1 = true;
+
+      finalDraw = true;
+      waitForCompleteDraw = true;
       await waitForDraw();
-      if (current_animation_id != animation_id || time_ratio > 1) {
-        break
-      }
-      draw_t_1 = Date.now();
-      await new Promise((r) => setTimeout(r, max(0,1000/fps - (draw_t_1-frame_start))));
-    }
-  };
 
-  const runExitAnimation = async (current_animation_id) => {
-    let start = Date.now();
-    draw_duration_1 = 1000;
-    let fps = 30;
-
-    draw_t_1 = start
-    final_draw_1 = false;
-    opacity_step = 8;
-    vertex_step = 5;
-
-    let [center_x,center_y] = [0,rand_int(rows/4,3*rows/4)];
-
-    let max_dist = (max(center_x,rows-center_x)**2 + max(center_y,cols-center_y)**2)**0.5 + 1;
-
-    while (true) {
-      if (current_animation_id != animation_id) {
-        return;
+      if (currentAnimationId !== animationId || timeRatio > 1) {
+        break;
       }
 
-      let frame_start = Date.now();
-      let time_ratio = (draw_t_1 - start)/draw_duration_1;
-      for (let i = 0; i< rows*cols; i++){
-        let x = i%cols;
-        let y = (i-x)/cols;
-        let [c_opacity,t_opacity, c_left,t_left ,c_right,t_right ,c_y,t_y,inited,s_override] = cells_1[i]
-        if (s_override) {
-          entered = true;
-          return
-        }
-        let dist = dist_from_center(x,y,center_x,center_y,cols,rows)
-        if (time_ratio>1?1:dist < max_dist*time_ratio*(rand_int(0,100)/100)) {
-          if (inited == true) {
-            inited = false;
-            c_opacity = 1;
-          }
-          if (x < center_x) {
-            t_right = 0;
-            [c_left,t_left,c_y,t_y] = [1,1,1,1]
-          } else {
-            t_left = 0;
-            [c_right,t_right,c_y,t_y] = [1,1,1,1]
-          }
-          t_opacity = 0.15
-        }
-        cells_1[i] = [c_opacity,t_opacity, c_left,t_left ,c_right,t_right ,c_y,t_y,inited,s_override];
-      }
-      final_draw_1 = true;
-      wait_for_complete_draw_1 = true;
-      await waitForDraw();
-      if (current_animation_id != animation_id || time_ratio > 1) {
-        break
-      }
-      draw_t_1 = Date.now();
-      await new Promise((r) => setTimeout(r, max(0,1000/fps - (draw_t_1-frame_start))));
+      drawTime = Date.now();
+      await new Promise((resolve) => setTimeout(resolve, max(0, 1000 / fps - (drawTime - frameStart))));
     }
   };
 
   globalThis.closeBgSettings = () => {
-    Utils.timeout(1, async () => {try{
-      const current_animation_id = ++animation_id;
-      await runExitAnimation(current_animation_id);
-      if (current_animation_id == animation_id) {
-        App.closeWindow("bg_settings");
+    Utils.timeout(1, async () => {
+      try {
+        const currentAnimationId = ++animationId;
+        await animate({ opening: false, currentAnimationId });
+        if (currentAnimationId === animationId) {
+          App.closeWindow("bg_settings");
+        }
+      } catch (error) {
+        print(error);
       }
-    }catch(e){print(e)}})
+    });
   };
 
   globalThis.openBgSettings = () => {
-    Utils.timeout(1, async () => {try{
-      const current_animation_id = ++animation_id;
-      resetCells();
-      App.openWindow("bg_settings");
-      await waitForDraw();
-      if (current_animation_id != animation_id) {
-        return;
+    Utils.timeout(1, async () => {
+      try {
+        const currentAnimationId = ++animationId;
+        resetCells();
+        App.openWindow("bg_settings");
+        await waitForDraw();
+        if (currentAnimationId !== animationId) {
+          return;
+        }
+        await animate({ opening: true, currentAnimationId });
+      } catch (error) {
+        print(error);
       }
-      await runOpenAnimation(current_animation_id);
-    }catch(e){print(e)}})
+    });
   };
 
   return Window({
@@ -285,69 +351,70 @@ const NierGeom = ({
     layer: "top",
     visible: false,
     focusable: false,
-    setup: (self) => {
-        cell_grid_1.connect("draw", (self, context) => {
-          // print("drawing")
-          let stable = true;
-          for (let i = 0; i < rows*cols; i++) {
-              let x = i%cols;
-              let y = (i-x)/cols;
-              let [c_opacity,t_opacity, c_left,t_left ,c_right,t_right ,c_y,t_y,inited,s_override] = cells_1[i]
-              if (s_override == true) {
-                continue
-              }
-              if (abs(c_opacity-t_opacity) > 0.01) {
-                stable = false;
-                c_opacity = c_opacity + (t_opacity-c_opacity)/opacity_step;
-              }
+    setup: () => {
+      cellGrid.connect("draw", (_, context) => {
+        let stable = true;
 
-              if (abs(c_left-t_left) > 0.001) {
-                stable = false;
-                c_left = c_left + (t_left-c_left)/vertex_step;
-              }
+        for (let i = 0; i < rows * cols; i += 1) {
+          const x = i % cols;
+          const y = (i - x) / cols;
+          let [cOpacity, tOpacity, cLeft, tLeft, cRight, tRight, cY, tY, inited] = cells[i];
 
-              if (abs(c_right-t_right) > 0.001) {
-                stable = false;
-                c_right = c_right + (t_right-c_right)/vertex_step;
-              }
-
-              if (abs(c_y-t_y) > 0.001) {
-                stable = false;
-                c_y = c_y + (t_y-c_y)/vertex_step;
-              }
-
-              draw_triangle(context, x*cell_width/2, y*cell_height, cell_width - gap, cell_height - gap/2, [...colors,c_opacity], (x%2==0?y%2==1:y%2==0),c_left,c_right,c_y);
-
-              cells_1[i] = [c_opacity,t_opacity, c_left,t_left ,c_right,t_right ,c_y,t_y,inited,s_override]
+          if (abs(cOpacity - tOpacity) > 0.01) {
+            stable = false;
+            cOpacity += (tOpacity - cOpacity) / opacityStep;
           }
-          wait_for_draw_1 = false;
-          if (final_draw_1 && !stable){
-              // print("stabling")
-              cell_grid_1.queue_draw();
-          } else if (final_draw_1 && stable) {
-            wait_for_complete_draw_1 = false;
+          if (abs(cLeft - tLeft) > 0.001) {
+            stable = false;
+            cLeft += (tLeft - cLeft) / vertexStep;
           }
-        })
+          if (abs(cRight - tRight) > 0.001) {
+            stable = false;
+            cRight += (tRight - cRight) / vertexStep;
+          }
+          if (abs(cY - tY) > 0.001) {
+            stable = false;
+            cY += (tY - cY) / vertexStep;
+          }
+
+          drawTriangle(
+            context,
+            gridOffsetX + x * cellWidth * 0.5,
+            gridOffsetY + y * cellHeight,
+            cellWidth - gap,
+            cellHeight - gap / 2,
+            [...colors, cOpacity],
+            x % 2 === 0 ? y % 2 === 1 : y % 2 === 0,
+            cLeft,
+            cRight,
+            cY
+          );
+
+          cells[i] = [cOpacity, tOpacity, cLeft, tLeft, cRight, tRight, cY, tY, inited];
+        }
+
+        waitForDrawFrame = false;
+        if (finalDraw && !stable) {
+          cellGrid.queue_draw();
+        } else if (finalDraw && stable) {
+          waitForCompleteDraw = false;
+        }
+      });
     },
     child: EventBox({
       classNames: ["nier-geom-container"],
       child: Overlay({
         child: Scrollable({
-          child:cell_grid_1,
+          child: cellGrid,
           setup: () => {
             globalThis.App = App;
-          }
+          },
         }),
-        overlays: [
-          
-        ]
       }),
     }),
   });
-}
+};
 
 export default {
-    windows: [
-        NierGeom({})
-    ]
-  }
+  windows: [SettingsGeom({})],
+};

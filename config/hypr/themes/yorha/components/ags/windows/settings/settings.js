@@ -39,8 +39,11 @@ const volume_page = (
   return VolumeGroup({go_to,passAssetsDir:parentAssetsDir});
 };
 
-const wifi_page = (go_to = (button) => {}) => {
-  return WifiGroup({go_to,passAssetsDir:parentAssetsDir});
+const wifi_page = (
+  go_to = (button) => {},
+  set_page2_selected = (button) => {}
+) => {
+  return WifiGroup({go_to,passAssetsDir:parentAssetsDir, set_page2_selected});
 };
 
 const bluetooth_page = (
@@ -292,7 +295,12 @@ const NierSettingPane = (
               font_size: 30,
               label: "Wi-Fi",
               handleClick: async (self, event) => {
-                await go_page2(wifi_page(), self).catch((e) => {
+                await go_page2(
+                  wifi_page(go_page3, (button) => {
+                    page2_selected = button;
+                  }),
+                  self
+                ).catch((e) => {
                   console.log(e);
                 });
               },

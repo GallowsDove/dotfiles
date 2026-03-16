@@ -51,6 +51,8 @@ export const NierSliderButton = ({
   hovering = false,
   size = button_label_2,
   font_size = button_label_1,
+  homogeneous_button = true,
+  slider_hexpand = false,
   useAssetsDir = assetsDir,
   setup = (self) => {},
   ...props
@@ -58,7 +60,7 @@ export const NierSliderButton = ({
   NierButton({
     useAssetsDir,
     label,
-    homogeneous_button: true,
+    homogeneous_button,
     containerClassNames: [],
     containerConnections: [],
     size,
@@ -141,6 +143,7 @@ export const NierSliderButton = ({
     children: [
       NierInertSlider({
         boxes: boxes,
+        hexpand: slider_hexpand,
         connections: [
           [
             ratio,
@@ -157,11 +160,13 @@ export const NierSliderButton = ({
 export const NierInertSlider = ({
   boxes = button_slider_width,
   slider_padding = button_slider_padding,
+  hexpand = false,
   connections = [],
 }) =>
   Box({
     classNames: ["nier-slider"],
     homogeneous: false,
+    hexpand,
     hpack: "end",
     vpack: "center",
     css: `padding-right: ${slider_padding}px;padding-left: 0px;`,

@@ -2,36 +2,36 @@
   "version": 2,
   "entries": {
     "jetbrains-idea.desktop": {
-      "score": 86.55836755464298,
-      "lastUpdated": 1773263426904
+      "score": 70.96765494518846,
+      "lastUpdated": 1773683813575
     },
     "librewolf.desktop": {
-      "score": 18.42238103192712,
-      "lastUpdated": 1773258528739
+      "score": 18.079247552442467,
+      "lastUpdated": 1773683801103
     },
     "nemo.desktop": {
-      "score": 16.5310514931612,
-      "lastUpdated": 1773263732562
+      "score": 18.106553341565405,
+      "lastUpdated": 1773309091542
     },
     "yazi.desktop": {
       "score": 2,
       "lastUpdated": 1773194605043
     },
     "steam.desktop": {
-      "score": 4.928564873424179,
-      "lastUpdated": 1773257225968
+      "score": 5.9517949405565505,
+      "lastUpdated": 1773621251876
     },
     "org.strawberrymusicplayer.strawberry.desktop": {
       "score": 20.605488311469927,
       "lastUpdated": 1773257213237
     },
     "code.desktop": {
-      "score": 18.352048707237504,
-      "lastUpdated": 1773258597380
+      "score": 17.31571628445801,
+      "lastUpdated": 1773684410242
     },
     "org.gnome.Nautilus.desktop": {
-      "score": 8.956441188954377,
-      "lastUpdated": 1773263450046
+      "score": 9.725193204661894,
+      "lastUpdated": 1773309098558
     },
     "beekeeper-studio.desktop": {
       "score": 1,
@@ -46,8 +46,12 @@
       "lastUpdated": 1773194605043
     },
     "vesktop.desktop": {
-      "score": 2.9982459291569477,
-      "lastUpdated": 1773262481217
+      "score": 3.503789531344197,
+      "lastUpdated": 1773576983785
+    },
+    "nheko.desktop": {
+      "score": 1,
+      "lastUpdated": 1773306129128
     }
   }
 }
