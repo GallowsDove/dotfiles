@@ -8,14 +8,15 @@ import {
 } from "./imports.js";
 
 import {
+  arrremove,
   arradd,
   dark,
-  arrremove,
   getPlayerPlaybackStatus,
   getTargetPlayer,
   rand_int,
   parentConfigDir
 } from "./utils.js";
+import { lyricsWindowVisible, toggleLyricsWindow } from "./lyrics.js";
 
 
 
@@ -31,6 +32,102 @@ const PLAYER_PREVIOUS_ICON = "media-skip-backward-symbolic";
 const PLAYER_PAUSE_ICON = "media-playback-pause-symbolic";
 const PLAYER_PLAY_ICON = "media-playback-start-symbolic";
 const PLAYER_NEXT_ICON = "media-skip-forward-symbolic";
+const PLAYER_LYRICS_ICON = "view-list-symbolic";
+const SHOW_PLAYER_VOLUME_SLIDER = true;
+
+const PlayerVolumeSlider = ({
+  ratio = Variable(0, {}),
+  boxes = 18,
+  slider_padding = 24,
+  isDragging = false,
+  hovering = false,
+}) => {
+  const segments = Array.from({ length: boxes }, (_, index) =>
+    Box({
+      classNames: ["player-volume-segment", `player-volume-segment-${index}`],
+      vpack: "center",
+      child: Box({
+        classNames: ["player-volume-segment-inner"],
+        vpack: "center",
+      }),
+    })
+  );
+
+  const updateSegments = () => {
+    let segmentIndex = Math.floor(ratio.value * boxes) - 1;
+    if (segmentIndex >= boxes) {
+      segmentIndex = boxes - 1;
+    }
+
+    segments.forEach((segment, index) => {
+      segment.toggleClassName("filled", index < segmentIndex);
+      segment.toggleClassName("focus", index === segmentIndex && hovering);
+      segment.toggleClassName("focus-on-hold", index === segmentIndex && !hovering && segmentIndex >= 0);
+      if (segmentIndex < 0) {
+        segment.toggleClassName("filled", false);
+        segment.toggleClassName("focus", false);
+        segment.toggleClassName("focus-on-hold", false);
+      }
+    });
+  };
+
+  return EventBox({
+    classNames: ["player-volume-slider"],
+    hpack: "center",
+    child: Box({
+      classNames: ["player-volume-track"],
+      hexpand: true,
+      hpack: "fill",
+      vpack: "center",
+      spacing: 0,
+      children: segments,
+      connections: [
+        [ratio, updateSegments],
+      ],
+    }),
+    setup: (self) => Utils.timeout(1, () => {
+      const applyPointerValue = (event) => {
+        const slider = self.child;
+        const [, xPos] = event.get_coords();
+        const alloc = slider.get_allocation();
+        const usableWidth = Math.max(alloc.width - slider_padding, 1);
+        const localX = Math.min(Math.max(xPos - alloc.x - slider_padding / 2, 0), usableWidth);
+        ratio.value = Math.min(Math.max(localX / usableWidth, 0), 1);
+      };
+
+      self.connect("enter-notify-event", () => {
+        hovering = true;
+        updateSegments();
+      });
+
+      self.connect("leave-notify-event", () => {
+        hovering = false;
+        if (!isDragging) {
+          updateSegments();
+        }
+      });
+
+      self.connect("button-press-event", (_widget, event) => {
+        isDragging = true;
+        applyPointerValue(event);
+      });
+
+      self.connect("button-release-event", () => {
+        isDragging = false;
+        updateSegments();
+      });
+
+      self.connect("motion-notify-event", (_widget, event) => {
+        if (!isDragging) {
+          return;
+        }
+        applyPointerValue(event);
+      });
+
+      updateSegments();
+    }),
+  });
+};
 
 const cava = Variable([],{
   listen: [App.configDir + '/scripts/cava', out => out.split(";").filter(n => n).map(n => Number(n)/1000)]
@@ -167,6 +264,7 @@ export const NowPlaying = ({
   drawing_rn = false,
   current_info = "",
   current_cover_info = "",
+  volume_ratio = Variable(0, {}),
 }) =>
 Box({
   classNames: ["player"],
@@ -177,13 +275,43 @@ Box({
       children: [
         Box({
           css: `min-width: ${rows * cell_width + 30 + 30 - 20}px;`,
-          hpack: "end",
-          spacing: -4,
+          hpack: "fill",
+          spacing: 8,
           children: [
+            ...(SHOW_PLAYER_VOLUME_SLIDER ? [
+              Box({
+                classNames: ["player-volume-slot"],
+                hpack: "start",
+                vpack: "center",
+                child: PlayerVolumeSlider({
+                  ratio: volume_ratio,
+                  boxes: 18,
+                }),
+              }),
+            ] : []),
+            Button({
+              hpack: "end",
+              classNames: ["player-buttons", "player-lyrics-button"],
+              child: Icon({
+                icon: PLAYER_LYRICS_ICON,
+                size: 28,
+                classNames: ["player-button-icon"],
+              }),
+              connections: [
+                [lyricsWindowVisible, (self) => {
+                  self.toggleClassName("active", lyricsWindowVisible.value);
+                }],
+              ],
+              onClicked: async (self) => {
+                toggleLyricsWindow();
+                self.classNames = arradd(self.classNames, "pressed");
+                await new Promise((r) => setTimeout(r, 100));
+                self.classNames = arrremove(self.classNames, "pressed");
+              },
+            }),
             Button({
               hpack: "end",
               classNames: ["player-buttons"],
-              hexpand: true,
               child: Icon({
                 icon: PLAYER_PREVIOUS_ICON,
                 size: 34,
@@ -244,7 +372,10 @@ Box({
 
                 let self_alloc = self.get_allocation();
 
-                let forward_alloc = self.parent.children[2].get_allocation();
+                let forward_button = self.parent.children.find((child) =>
+                  child.classNames?.includes("player-next-button")
+                ) ?? self.parent.children[self.parent.children.length - 1];
+                let forward_alloc = forward_button.get_allocation();
 
                 let forward_cells = Math.floor(forward_alloc.width/cell_width);
                 let self_cells = Math.floor((self_alloc.width/2)/cell_width);
@@ -290,7 +421,7 @@ Box({
             }),
             Button({
               hpack: "end",
-              classNames: ["player-buttons"],
+              classNames: ["player-buttons", "player-next-button"],
               css: "margin-right: 15px;",
               child: Icon({
                 icon: PLAYER_NEXT_ICON,
@@ -616,6 +747,33 @@ Box({
     })
   ],
   connections: [
+    [
+      Mpris,
+      () => {
+        const player = getTargetPlayer(Mpris.players);
+        if (!player) {
+          return;
+        }
+
+        volume_ratio.value = Number(player.volume ?? 0);
+      },
+    ],
+    [
+      volume_ratio,
+      () => {
+        const player = getTargetPlayer(Mpris.players);
+        if (!player) {
+          return;
+        }
+
+        const currentVolume = Number(player.volume ?? 0);
+        if (Math.round(currentVolume * 100) === Math.round(volume_ratio.value * 100)) {
+          return;
+        }
+
+        player.volume = volume_ratio.value;
+      },
+    ],
     [
       App,
       (self, windowName, visible) => {

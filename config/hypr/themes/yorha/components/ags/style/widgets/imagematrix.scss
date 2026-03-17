@@ -84,6 +84,15 @@
   }
 }
 
+.player-lyrics-button.active {
+  .player-button-icon {
+    margin-right: 0px;
+    margin-top: -7px;
+    margin-bottom: -6px;
+    -gtk-icon-shadow: 10px 10px rgba($brown, 0.25);
+  }
+}
+
 .image-matrix-row.nohover {
   margin: 0px;
   transition: margin 0.1s cubic-bezier(1, -0.01, 1, 0.1);
@@ -96,6 +105,86 @@
 .image-matrix-container {
   border: $brown 10px solid;
   margin-right: 10px;
+}
+
+.playerbg-mask {
+  background: rgba($brown, 0.06);
+}
+
+.lyrics-shell {
+  background: mix($background, $brown, 88%);
+  border: 2px solid rgba($brown, 0.35);
+  padding: 7px 15px 6px 15px;
+}
+
+.lyrics-line {
+  color: $brown;
+  font-family: FOT-Rodin Pro DB, sans-serif;
+  font-size: 1em;
+  letter-spacing: 0.03rem;
+  text-shadow: 4px 4px 0 rgba($brown, 0.12);
+}
+
+.player-volume-slot {
+  min-width: 220px;
+  margin-top: 12px;
+  margin-left: -16px;
+  margin-right: 4px;
+}
+
+.player-volume-slider {
+  min-width: 220px;
+  min-height: 42px;
+  background: rgba(mix($brown, $highlight, 72%), 0.74);
+  border: 2px solid rgba($brown, 0.38);
+  padding: 4px;
+}
+
+.player-volume-track {
+  min-width: 0;
+  min-height: 30px;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.player-volume-segment {
+  min-width: 7px;
+  min-height: 30px;
+  margin-right: 1px;
+}
+
+.player-volume-segment:last-child {
+  margin-right: 0;
+}
+
+.player-volume-segment-inner {
+  min-width: 3px;
+  min-height: 1px;
+  margin: 7px 2px;
+  background: rgba($highlight, 0.24);
+  transition: background 0.18s ease, box-shadow 0.18s ease, margin 0.18s ease, min-height 0.18s ease;
+}
+
+.player-volume-segment.filled .player-volume-segment-inner {
+  background: rgba($highlight, 0.84);
+  margin-top: 2px;
+  margin-bottom: 2px;
+  min-height: 12px;
+}
+
+.player-volume-segment.focus .player-volume-segment-inner {
+  background: $highlight;
+  margin-top: 1px;
+  margin-bottom: 1px;
+  min-height: 20px;
+  box-shadow: 0 0 3px 1px rgba($highlight, 0.3);
+}
+
+.player-volume-segment.focus-on-hold .player-volume-segment-inner {
+  background: rgba($highlight, 0.9);
+  margin-top: 2px;
+  margin-bottom: 2px;
+  min-height: 12px;
 }
 
 @mixin glow($time) {
