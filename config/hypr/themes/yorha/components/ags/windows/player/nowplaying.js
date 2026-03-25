@@ -16,7 +16,6 @@ import {
   rand_int,
   parentConfigDir
 } from "./utils.js";
-import { lyricsWindowVisible, toggleLyricsWindow } from "./lyrics.js";
 
 
 
@@ -34,6 +33,21 @@ const PLAYER_PLAY_ICON = "media-playback-start-symbolic";
 const PLAYER_NEXT_ICON = "media-skip-forward-symbolic";
 const PLAYER_LYRICS_ICON = "view-list-symbolic";
 const SHOW_PLAYER_VOLUME_SLIDER = true;
+const LYRICS_TOGGLE_CMD = "agsv1 -b lyrics -t lyrics";
+const PLAYER_IMAGE_MATRIX_CAVA_REACTIVE = true;
+const PLAYER_IMAGE_MATRIX_CAVA_OPACITY_BOOST = 0.2;
+const PLAYER_IMAGE_MATRIX_CAVA_MAX_OFFSET_PX = 6;
+const PLAYER_IMAGE_MATRIX_EFFECT_COLOR_BOOST = 0.5;
+const PLAYER_IMAGE_MATRIX_CAVA_BASS_GATE = 0.16;
+const PLAYER_IMAGE_MATRIX_CAVA_MID_GATE = 0.2;
+const PLAYER_IMAGE_MATRIX_CAVA_HIGH_GATE = 0.24;
+const PLAYER_IMAGE_MATRIX_MODE = "color";
+const PLAYER_IMAGE_MATRIX_IN_COLOR = PLAYER_IMAGE_MATRIX_MODE === "color";
+const PLAYER_IMAGE_MATRIX_OPACITY_FLOOR = 0.12;
+const PLAYER_IMAGE_MATRIX_OPACITY_CEIL = 0.94;
+const PLAYER_IMAGE_MATRIX_OPACITY_GAMMA = 1.35;
+const PLAYER_IMAGE_MATRIX_COLOR_BASE_OPACITY = 0.68;
+const PLAYER_IMAGE_MATRIX_COLOR_OPACITY_VARIATION = 0.24;
 
 const PlayerVolumeSlider = ({
   ratio = Variable(0, {}),
@@ -155,6 +169,31 @@ const color_diff = (c1, c2) => {
   ];
 }
 
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+const averageRange = (values, startRatio, endRatio) => {
+  if (!values.length) {
+    return 0;
+  }
+
+  const start = Math.max(0, Math.floor(values.length * startRatio));
+  const end = Math.max(start + 1, Math.min(values.length, Math.ceil(values.length * endRatio)));
+  let total = 0;
+
+  for (let i = start; i < end; i += 1) {
+    total += Math.min(Math.max(values[i] ?? 0, 0), 1);
+  }
+
+  return total / Math.max(end - start, 1);
+};
+
+const gateEnergy = (value, threshold) => {
+  if (value <= threshold) {
+    return 0;
+  }
+
+  return clamp((value - threshold) / Math.max(1 - threshold, 0.001), 0, 1);
+};
+
 const image_to_matrix = async (inputPath, imagedat, threshold = 128) => {
   // Load the image from file
   print("making image to matrix")
@@ -180,15 +219,28 @@ const image_to_matrix = async (inputPath, imagedat, threshold = 128) => {
       if (darkness < min) {
         min = darkness;
       }
-      darknessMatrix.push([r/255,g/255,b/255,darkness]);
+      darknessMatrix.push([r / 255, g / 255, b / 255, darkness, intensity / 255]);
     }
   }
 
+  const range = Math.max(max - min, 1 / 255);
   for (let i = 0; i < resizedPixbuf.get_height()*resizedPixbuf.get_width(); i++) {
-    const cell = darknessMatrix[i][3] + (dark.value?(-min):(1-max));
-    // const darkness =  1-cell;
-    const darkness = 1 - opacity_map[Math.round(cell * (opacity_map.length - 1))];
-    darknessMatrix[i][3] = [darkness]
+    const normalized = clamp((darknessMatrix[i][3] - min) / range, 0, 1);
+    const contrasted = clamp((normalized - PLAYER_IMAGE_MATRIX_OPACITY_FLOOR) / Math.max(PLAYER_IMAGE_MATRIX_OPACITY_CEIL - PLAYER_IMAGE_MATRIX_OPACITY_FLOOR, 0.001), 0, 1);
+    const darkness = 1 - opacity_map[Math.round((contrasted ** PLAYER_IMAGE_MATRIX_OPACITY_GAMMA) * (opacity_map.length - 1))];
+    const [r, g, b, _darkness, intensity] = darknessMatrix[i];
+    if (PLAYER_IMAGE_MATRIX_IN_COLOR) {
+      const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+      const midtone = 1 - Math.abs((intensity * 2) - 1);
+      darknessMatrix[i][3] = clamp(
+        PLAYER_IMAGE_MATRIX_COLOR_BASE_OPACITY
+          + PLAYER_IMAGE_MATRIX_COLOR_OPACITY_VARIATION * ((chroma * 0.65) + (midtone * 0.35)),
+        0,
+        1
+      );
+    } else {
+      darknessMatrix[i][3] = darkness;
+    }
   }
   imagedat.value = darknessMatrix;
 
@@ -265,6 +317,7 @@ export const NowPlaying = ({
   current_info = "",
   current_cover_info = "",
   volume_ratio = Variable(0, {}),
+  matrix_needs_redraw = false,
 }) =>
 Box({
   classNames: ["player"],
@@ -297,13 +350,8 @@ Box({
                 size: 28,
                 classNames: ["player-button-icon"],
               }),
-              connections: [
-                [lyricsWindowVisible, (self) => {
-                  self.toggleClassName("active", lyricsWindowVisible.value);
-                }],
-              ],
               onClicked: async (self) => {
-                toggleLyricsWindow();
+                execAsync(LYRICS_TOGGLE_CMD).catch(print);
                 self.classNames = arradd(self.classNames, "pressed");
                 await new Promise((r) => setTimeout(r, 100));
                 self.classNames = arrremove(self.classNames, "pressed");
@@ -475,18 +523,25 @@ Box({
             children: [
               drawingArea,
             ],
-            connections: [
-              [1000,() => {
-                  drawingArea.queue_draw();
-              }]
-           ],
             setup: (self) => Utils.timeout(1, () => {
               drawingArea.hexpand = true;
               drawingArea.hpack = "end";
               drawingArea.connect('draw', (widget, context) => {
+                matrix_needs_redraw = false;
+                const cavaValues = PLAYER_IMAGE_MATRIX_CAVA_REACTIVE ? cava.value : [];
+                const bassEnergy = PLAYER_IMAGE_MATRIX_CAVA_REACTIVE
+                  ? gateEnergy(averageRange(cavaValues, 0, 0.18), PLAYER_IMAGE_MATRIX_CAVA_BASS_GATE) ** 1.35
+                  : 0;
+                const midEnergy = PLAYER_IMAGE_MATRIX_CAVA_REACTIVE
+                  ? gateEnergy(averageRange(cavaValues, 0.22, 0.68), PLAYER_IMAGE_MATRIX_CAVA_MID_GATE) ** 1.45
+                  : 0;
+                const highEnergy = PLAYER_IMAGE_MATRIX_CAVA_REACTIVE
+                  ? gateEnergy(averageRange(cavaValues, 0.72, 1), PLAYER_IMAGE_MATRIX_CAVA_HIGH_GATE) ** 1.6
+                  : 0;
                 for (let i = 0; i < rows*rows; i++){
                   const x = i%rows;
                   const y = Math.floor(i/rows);
+                  const [sourceR, sourceG, sourceB, sourceOpacity, sourceIntensity = 0.5] = imagedat.value[i];
   
                   let [r,g,b,current_opacity,opacity,offset] = showingdat.value[i];
   
@@ -494,7 +549,8 @@ Box({
                     continue;
                   }
   
-                  let diff = !color_diff([r,g,b], colors).every(n => n < 1/255);
+                  let diff = !PLAYER_IMAGE_MATRIX_IN_COLOR
+                    && !color_diff([r,g,b], colors).every(n => n < 1/255);
   
                   let opacity_diff = Math.abs(current_opacity - opacity) > 1/255;
 
@@ -502,13 +558,77 @@ Box({
                       [r,g,b] = color_mix([r,g,b], colors, 0.2);
                     }
   
-                    if (opacity_diff){
+                  if (opacity_diff){
                       current_opacity = current_opacity + (opacity-current_opacity)*(0.2);
                   }
-  
-                  
-  
-                  if (offset!=0 && offset < 100) {
+ 
+                  let reactiveOffsetX = 0;
+                  let reactiveOffsetY = 0;
+                  let reactiveOpacity = current_opacity;
+                  if (PLAYER_IMAGE_MATRIX_CAVA_REACTIVE && current_opacity > 0.08) {
+                    const normalizedX = x / Math.max(rows - 1, 1);
+                    const normalizedY = y / Math.max(rows - 1, 1);
+                    const dx = normalizedX - 0.5;
+                    const dy = normalizedY - 0.5;
+                    const ellipticalDy = dy * 0.7;
+                    const radialDistance = Math.sqrt(dx * dx + ellipticalDy * ellipticalDy);
+                    const outwardX = dx / Math.max(radialDistance, 0.001);
+                    const outwardY = ellipticalDy / Math.max(radialDistance, 0.001);
+                    const centerWeight = clamp(1 - radialDistance / 0.78, 0, 1);
+                    const bassInfluence = bassEnergy * centerWeight;
+                    const bassDisplacementWeight = clamp((radialDistance - 0.01) / 0.07, 0, 1);
+
+                    const midtoneWeight = 1 - Math.abs((sourceIntensity * 2) - 1);
+                    const localPhase = (Math.sin((x * 0.9) + (y * 1.15)) + 1) * 0.5;
+                    const horizontalWeight = 0.55 + (1 - Math.abs(normalizedX - 0.5) * 2) * 0.45;
+                    const bandedPhase = Math.sin((y * 0.42) + (x * 0.12));
+                    const midInfluence = midEnergy * current_opacity * (0.45 + midtoneWeight * 0.75) * (0.55 + localPhase * 0.45) * horizontalWeight;
+
+                    const edgeWeight = clamp((Math.abs(normalizedX - 0.5) * 2 - 0.15) / 0.85, 0, 1);
+                    const brightWeight = clamp((Math.max(sourceR, sourceG, sourceB) - 0.35) / 0.65, 0, 1);
+                    const highMask = localPhase > 0.58 ? 1 : 0.35;
+                    const highInfluence = highEnergy * edgeWeight * brightWeight * (0.55 + highMask * 0.45);
+
+                    const reactiveStrength = clamp(
+                      bassInfluence * 1.0 + midInfluence * 0.95 + highInfluence * 0.75,
+                      0,
+                      1
+                    );
+
+                    if (reactiveStrength > 0.004) {
+                      reactiveOffsetX =
+                        outwardX * bassInfluence * bassDisplacementWeight * PLAYER_IMAGE_MATRIX_CAVA_MAX_OFFSET_PX * 0.65
+                        + bandedPhase * midInfluence * PLAYER_IMAGE_MATRIX_CAVA_MAX_OFFSET_PX * 0.95
+                        + Math.cos((x * 0.4) + (y * 0.2)) * highInfluence * PLAYER_IMAGE_MATRIX_CAVA_MAX_OFFSET_PX * 0.18;
+                      reactiveOffsetY =
+                        -bassInfluence * bassDisplacementWeight * PLAYER_IMAGE_MATRIX_CAVA_MAX_OFFSET_PX * 0.72
+                        - midInfluence * PLAYER_IMAGE_MATRIX_CAVA_MAX_OFFSET_PX * 0.18
+                        - highInfluence * PLAYER_IMAGE_MATRIX_CAVA_MAX_OFFSET_PX * 0.22;
+                      reactiveOpacity = Math.min(
+                        1,
+                        current_opacity
+                          + reactiveStrength * PLAYER_IMAGE_MATRIX_CAVA_OPACITY_BOOST
+                          + midInfluence * PLAYER_IMAGE_MATRIX_CAVA_OPACITY_BOOST * 0.6
+                          + highInfluence * PLAYER_IMAGE_MATRIX_CAVA_OPACITY_BOOST * 0.8
+                      );
+                    }
+                  }
+
+                  const hasMatrixOffset = offset != 0 && offset < 100;
+                  const hasReactiveEffect = reactiveOffsetX !== 0 || reactiveOffsetY !== 0 || reactiveOpacity !== current_opacity;
+                  let drawColor = [r, g, b];
+                  if (!PLAYER_IMAGE_MATRIX_IN_COLOR && (hasMatrixOffset || hasReactiveEffect)) {
+                    const matrixEffectStrength = hasMatrixOffset ? Math.min(Math.abs(offset) / 100, 1) : 0;
+                    const reactiveEffectStrength = Math.max(0, reactiveOpacity - current_opacity) / Math.max(PLAYER_IMAGE_MATRIX_CAVA_OPACITY_BOOST, 0.001);
+                    const effectStrength = Math.min(1, (matrixEffectStrength * 0.7) + reactiveEffectStrength);
+                    drawColor = color_mix(
+                      [r, g, b],
+                      [sourceR, sourceG, sourceB],
+                      Math.min(1, effectStrength * PLAYER_IMAGE_MATRIX_EFFECT_COLOR_BOOST)
+                    );
+                  }
+
+                  if (hasMatrixOffset) {
                     let now_offset = offset;
                     if (now_offset > 50){
                       now_offset = 100 - now_offset;
@@ -516,28 +636,44 @@ Box({
                     } else {
                       offset += 3;
                     }
-                    const centerX = (x*cell_width) + (now_offset/100)*2*cell_width/2;
-                    const centerY = (y*cell_height) + (now_offset/100)*2*cell_height/2;
+                    const centerX = (x*cell_width) + (now_offset/100)*2*cell_width/2 + reactiveOffsetX;
+                    const centerY = (y*cell_height) + (now_offset/100)*2*cell_height/2 + reactiveOffsetY;
 
-                    context.setSourceRGBA(r,g,b, 2*current_opacity);
+                    context.setSourceRGBA(drawColor[0], drawColor[1], drawColor[2], Math.min(1, 2*reactiveOpacity));
                     context.rectangle(centerX, centerY, cell_width, cell_height);
                     context.fill();
                     
                   } else {
-                    context.setSourceRGBA(r,g,b,current_opacity);
-                    context.rectangle(x*cell_width,y*cell_height,cell_width,cell_height);
+                    context.setSourceRGBA(drawColor[0], drawColor[1], drawColor[2], reactiveOpacity);
+                    context.rectangle(
+                      x*cell_width + reactiveOffsetX,
+                      y*cell_height + reactiveOffsetY,
+                      cell_width,
+                      cell_height
+                    );
                     context.fill();
                   }
-  
+
                   showingdat.value[i] = [r,g,b,current_opacity,opacity,offset];
                   if (diff || opacity_diff || offset!=0){
-                    drawingArea.queue_draw();
+                    matrix_needs_redraw = true;
                   }
                 }
                 wait_for_draw = false;
+                if (matrix_needs_redraw) {
+                  Utils.timeout(16, () => drawingArea.queue_draw());
+                }
               })
             }),
             connections: [
+              [
+                cava,
+                () => {
+                  if (PLAYER_IMAGE_MATRIX_CAVA_REACTIVE && App.getWindow("player")?.visible) {
+                    drawingArea.queue_draw();
+                  }
+                },
+              ],
               [
                 dark,
                 (self) => {
@@ -589,10 +725,12 @@ Box({
                           for (let i = 0; i < rows*rows; i++){
                             let [r2,g2,b2,darkness] = imagedat.value[i];
                             let [r,g,b,o,opacity,offset] = showingdat.value[i];
+                            const colorChanged = PLAYER_IMAGE_MATRIX_IN_COLOR
+                              && !color_diff([r, g, b], [r2, g2, b2]).every((n) => n < 1/255);
           
-                            if (Math.abs(darkness-opacity) > 1/255) {
-                              let time_ratio = draw_t/draw_duration;
-                              if (darkness < time_ratio) {
+                            if (Math.abs(darkness-opacity) > 1/255 || colorChanged) {
+                              const time_ratio = draw_t / draw_duration;
+                              if (darkness < time_ratio || colorChanged) {
                                 [r,g,b,o,offset] = [r2,g2,b2,1,1];
                                 opacity = darkness;
                               }

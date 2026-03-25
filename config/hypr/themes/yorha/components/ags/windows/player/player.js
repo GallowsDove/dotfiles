@@ -1,11 +1,11 @@
 import { Widget,Utils, App,Mpris } from "./imports.js";
 import { NowPlaying } from "./nowplaying.js";
-import { LyricsWindow } from "./lyrics.js";
 
 import { css, dark, getTargetPlayer } from "./utils.js";
 
 const { Window } = Widget;
 const PLAYER_MODE = "top-blur";
+const PLAYER_AUTO_TOGGLE = false;
 const PLAYER_BG_OPEN_DELAY = 1000;
 const TOP_BLUR_MODE = PLAYER_MODE === "top-blur";
 
@@ -70,37 +70,39 @@ export const NierPlayer = () => Window({
 globalThis.App = App;
 globalThis.Mpris = Mpris;
 
-Utils.timeout(500, () => {
-    if (!getTargetPlayer(Mpris.players)) {
-        print("closing player")
-        Utils.timeout(0,() => {
-            if (!getTargetPlayer(Mpris.players)) {
-                closePlayer();
-            }
-        });
-    } else { 
-        print("opening player")
-        openPlayer();
-    }
-})
+if (PLAYER_AUTO_TOGGLE) {
+    Utils.timeout(500, () => {
+        if (!getTargetPlayer(Mpris.players)) {
+            print("closing player")
+            Utils.timeout(0,() => {
+                if (!getTargetPlayer(Mpris.players)) {
+                    closePlayer();
+                }
+            });
+        } else { 
+            print("opening player")
+            openPlayer();
+        }
+    })
 
-Mpris.connect("changed",() => {
-    if (!getTargetPlayer(Mpris.players)) {
-        print("closing player")
-        Utils.timeout(3000,() => {
-            if (!getTargetPlayer(Mpris.players)) {
-                closePlayer();
-            }
-        });
-    } else { 
-        print("opening player")
-        Utils.timeout(300,() => {
-            if (getTargetPlayer(Mpris.players)) {
-                openPlayer();
-            }
-        });
-    }
-});
+    Mpris.connect("changed",() => {
+        if (!getTargetPlayer(Mpris.players)) {
+            print("closing player")
+            Utils.timeout(3000,() => {
+                if (!getTargetPlayer(Mpris.players)) {
+                    closePlayer();
+                }
+            });
+        } else { 
+            print("opening player")
+            Utils.timeout(300,() => {
+                if (getTargetPlayer(Mpris.players)) {
+                    openPlayer();
+                }
+            });
+        }
+    });
+}
 
 App.connect("window-toggled", (_, windowName, visible) => {
     if (!TOP_BLUR_MODE) {
@@ -136,7 +138,6 @@ export default {
         playerbg: 0,
       },
     windows: [
-        LyricsWindow(),
         NierPlayerBg(),
         NierPlayer(),
     ],

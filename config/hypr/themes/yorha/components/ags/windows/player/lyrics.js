@@ -1,4 +1,5 @@
 import { App, Widget, Utils, Variable, Mpris } from "./imports.js";
+import { css, dark } from "./utils.js";
 
 const { Window, Box, Label, Overlay } = Widget;
 
@@ -6,15 +7,22 @@ export const lyricsWindowVisible = Variable(false, {});
 const LYRICS_BOTTOM_OFFSET = 120;
 const LYRICS_TEXT_SIZE_REM = 1.64;
 const LYRICS_SYNC_INTERVAL = 250;
+const LYRICS_ACTIVE_PLAYER_POLL_INTERVAL = 2000;
 const LRCLIB_BASE_URL = "https://lrclib.net/api";
 const PLAYERCTL_METADATA_FORMAT = "player={{playerName}}|status={{status}}|title={{title}}|artist={{artist}}|album={{album}}|length={{mpris:length}}";
 const lyricsLine = Variable("No synced lyrics loaded.", {});
 const lyricsCache = new Map();
+const MPRIS_REFRESH_DEBOUNCE_MS = 300;
 
 let activeTrackKey = null;
 let activeLyrics = null;
+let activePlayer = null;
 let activeFetchId = 0;
-let syncLoopStarted = false;
+let activeFetchTrackKey = null;
+let activeFetchPromise = null;
+let syncLoopRunning = false;
+let playerPollRunning = false;
+let refreshRequestId = 0;
 
 const BROWSER_PLAYERS = [
   "firefox",
@@ -30,10 +38,61 @@ const normalizeLookupText = (value) => normalizeText(value)
   .replace(/[’']/g, "'")
   .replace(/\s+/g, " ");
 
+const getLookupVariants = (value) => {
+  const base = normalizeLookupText(value);
+  const variants = new Set(base ? [base] : []);
+  const raw = normalizeText(value);
+
+  for (const match of raw.matchAll(/[\(\[]([^\)\]]+)[\)\]]/g)) {
+    const normalized = normalizeLookupText(match[1]);
+    if (normalized) {
+      variants.add(normalized);
+    }
+  }
+
+  const withoutBracketed = normalizeLookupText(raw.replace(/\s*[\(\[][^\)\]]*[\)\]]/g, " "));
+  if (withoutBracketed) {
+    variants.add(withoutBracketed);
+  }
+
+  return [...variants];
+};
+
 const stripParentheticalSuffix = (value) => normalizeText(value)
   .replace(/\s*[\(\[][^\)\]]*[\)\]]\s*$/g, "")
   .replace(/\s+/g, " ")
   .trim();
+
+const stripFeaturingSuffix = (value) => normalizeText(value)
+  .replace(/\s+(?:feat\.?|ft\.?|featuring)\s+.+$/i, "")
+  .replace(/\s+/g, " ")
+  .trim();
+
+const getTitleVariants = (title) => Array.from(new Set([
+  normalizeText(title),
+  stripParentheticalSuffix(title),
+  stripFeaturingSuffix(title),
+  stripFeaturingSuffix(stripParentheticalSuffix(title)),
+].filter(Boolean)));
+
+const getArtistVariants = (artist) => {
+  const raw = normalizeText(artist);
+  const variants = new Set(raw ? [raw] : []);
+
+  for (const match of raw.matchAll(/[\(\[]([^\)\]]+)[\)\]]/g)) {
+    const value = normalizeText(match[1]);
+    if (value) {
+      variants.add(value);
+    }
+  }
+
+  const withoutBracketed = normalizeText(raw.replace(/\s*[\(\[][^\)\]]*[\)\]]/g, " "));
+  if (withoutBracketed) {
+    variants.add(withoutBracketed);
+  }
+
+  return [...variants];
+};
 
 const getPlayerTitle = (player) => (
   normalizeText(
@@ -177,6 +236,8 @@ const isBrowserPlayer = (name) => {
   return BROWSER_PLAYERS.some((browser) => lowered.startsWith(browser));
 };
 
+const isLyricsVisible = () => lyricsWindowVisible.value && !!App.getWindow("lyrics")?.visible;
+
 const getActivePlayerSnapshot = async () => {
   try {
     const output = await Utils.execAsync([
@@ -237,6 +298,8 @@ const parseSyncedLyrics = (text) => {
   return parsed.sort((left, right) => left.timeMs - right.timeMs);
 };
 
+const LYRICS_LOOKAHEAD_MS = Math.round(LYRICS_SYNC_INTERVAL / 2);
+
 const findLyricLine = (entries, positionMs) => {
   if (!entries?.length) {
     return "";
@@ -272,7 +335,7 @@ const httpGetJson = async (url) => {
     "curl",
     "-fsSL",
     "--max-time",
-    "5",
+    "3",
     url,
   ]);
 
@@ -307,11 +370,20 @@ const fetchPlayerctlPositionMs = async (player) => {
 
 const hasSyncedLyrics = (entry) => typeof entry?.syncedLyrics === "string" && entry.syncedLyrics.trim().length > 0;
 
+const getRoundedDurationSec = (durationMs) => {
+  if (!durationMs) {
+    return 0;
+  }
+
+  const rounded = Math.round(durationMs / 1000);
+  return Number.isFinite(rounded) && rounded > 0 ? rounded : 0;
+};
+
 const scoreSearchResult = (entry, title, artist, durationSec) => {
   const entryTitle = normalizeLookupText(entry?.trackName ?? entry?.name ?? "");
   const entryArtist = normalizeLookupText(entry?.artistName ?? "");
   const targetTitle = normalizeLookupText(title);
-  const targetArtist = normalizeLookupText(artist);
+  const targetArtistVariants = getLookupVariants(artist);
   const entryDuration = Number(entry?.duration ?? 0);
 
   let score = 0;
@@ -322,9 +394,9 @@ const scoreSearchResult = (entry, title, artist, durationSec) => {
     score += 5;
   }
 
-  if (targetArtist && entryArtist === targetArtist) {
+  if (targetArtistVariants.some((variant) => variant && entryArtist === variant)) {
     score += 10;
-  } else if (targetArtist && (entryArtist.includes(targetArtist) || targetArtist.includes(entryArtist))) {
+  } else if (targetArtistVariants.some((variant) => variant && (entryArtist.includes(variant) || variant.includes(entryArtist)))) {
     score += 5;
   }
 
@@ -342,31 +414,52 @@ const scoreSearchResult = (entry, title, artist, durationSec) => {
   return score;
 };
 
+const isAcceptableSearchResult = (entry, title, artist, durationSec) => {
+  const entryTitle = normalizeLookupText(entry?.trackName ?? entry?.name ?? "");
+  const entryArtist = normalizeLookupText(entry?.artistName ?? "");
+  const targetTitle = normalizeLookupText(title);
+  const targetArtistVariants = getLookupVariants(artist);
+  const entryDuration = Number(entry?.duration ?? 0);
+
+  const exactTitleMatch = entryTitle === targetTitle;
+  const looseTitleMatch = exactTitleMatch || entryTitle.includes(targetTitle) || targetTitle.includes(entryTitle);
+  const artistMatches = !targetArtistVariants.length || targetArtistVariants.some((variant) => (
+    variant && (entryArtist === variant || entryArtist.includes(variant) || variant.includes(entryArtist))
+  ));
+  const durationDelta = durationSec && entryDuration ? Math.abs(entryDuration - durationSec) : 0;
+  const strongDurationMatch = !durationSec || !entryDuration || durationDelta <= 3;
+  const looseDurationMatch = !durationSec || !entryDuration || durationDelta <= 8;
+
+  return (
+    (exactTitleMatch && (artistMatches || strongDurationMatch))
+    || (looseTitleMatch && artistMatches && looseDurationMatch)
+  );
+};
+
 const fetchSyncedLyrics = async (player) => {
   const title = getPlayerTitle(player);
   const artist = firstArtist(player);
   const album = getPlayerAlbum(player);
   const durationMs = getPlayerDurationMs(player);
   const durationSec = durationMs ? Number((durationMs / 1000).toFixed(3)) : 0;
+  const roundedDurationSec = getRoundedDurationSec(durationMs);
 
   if (!title || !artist) {
     return [];
   }
 
-  const titleVariants = Array.from(new Set([
-    title,
-    stripParentheticalSuffix(title),
-  ].filter(Boolean)));
+  const titleVariants = getTitleVariants(title);
+  const artistVariants = getArtistVariants(artist);
 
   for (const titleVariant of titleVariants) {
-    const exactVariants = [
-      { track_name: titleVariant, artist_name: artist, album_name: album, duration: durationMs || "" },
-      { track_name: titleVariant, artist_name: artist, duration: durationMs || "" },
-      { track_name: titleVariant, artist_name: artist, album_name: album, duration: durationSec || "" },
-      { track_name: titleVariant, artist_name: artist, duration: durationSec || "" },
-      { track_name: titleVariant, artist_name: artist, album_name: album },
-      { track_name: titleVariant, artist_name: artist },
-    ];
+    const exactVariants = artistVariants.flatMap((artistVariant) => ([
+      ...(roundedDurationSec ? [
+        { track_name: titleVariant, artist_name: artistVariant, album_name: album, duration: roundedDurationSec },
+        { track_name: titleVariant, artist_name: artistVariant, duration: roundedDurationSec },
+      ] : []),
+      { track_name: titleVariant, artist_name: artistVariant, album_name: album },
+      { track_name: titleVariant, artist_name: artistVariant },
+    ]));
 
     for (const params of exactVariants) {
       try {
@@ -380,19 +473,21 @@ const fetchSyncedLyrics = async (player) => {
     }
   }
 
-  try {
-    let bestMatch = null;
-    let bestScore = -1;
+  let bestMatch = null;
+  let bestScore = -1;
 
-    for (const titleVariant of titleVariants) {
-      const searchVariants = [
-        { track_name: titleVariant, artist_name: artist, album_name: album },
-        { track_name: titleVariant, artist_name: artist },
-        { q: `${titleVariant} ${artist}` },
-        { q: titleVariant },
-      ];
+  for (const titleVariant of titleVariants) {
+    const searchVariants = [
+      ...artistVariants.flatMap((artistVariant) => ([
+        { track_name: titleVariant, artist_name: artistVariant, album_name: album },
+        { track_name: titleVariant, artist_name: artistVariant },
+        { q: `${titleVariant} ${artistVariant}` },
+      ])),
+      { q: titleVariant },
+    ];
 
-      for (const params of searchVariants) {
+    for (const params of searchVariants) {
+      try {
         const search = await httpGetJson(`${LRCLIB_BASE_URL}/search?${buildQuery(params)}`);
         if (!Array.isArray(search)) {
           continue;
@@ -409,21 +504,31 @@ const fetchSyncedLyrics = async (player) => {
             bestScore = score;
           }
         }
+
+        if (bestScore >= 20) {
+          return parseSyncedLyrics(bestMatch.syncedLyrics);
+        }
+      } catch (error) {
+        print("lyrics search fetch failed", error);
       }
     }
-
-    return hasSyncedLyrics(bestMatch) ? parseSyncedLyrics(bestMatch.syncedLyrics) : [];
-  } catch (error) {
-    print("lyrics search fetch failed", error);
-    return [];
   }
+
+  return hasSyncedLyrics(bestMatch) && isAcceptableSearchResult(bestMatch, title, artist, durationSec)
+    ? parseSyncedLyrics(bestMatch.syncedLyrics)
+    : [];
 };
 
 const refreshLyricsForTrack = async () => {
+  if (!isLyricsVisible()) {
+    return;
+  }
+
   const player = await getActivePlayerSnapshot();
   const trackKey = buildTrackKey(player);
 
   if (!player || !trackKey) {
+    activePlayer = null;
     activeTrackKey = null;
     activeLyrics = null;
     lyricsLine.value = "No synced lyrics loaded.";
@@ -434,7 +539,12 @@ const refreshLyricsForTrack = async () => {
     return;
   }
 
+  const trackChanged = trackKey !== activeTrackKey;
+  activePlayer = player;
   activeTrackKey = trackKey;
+  if (trackChanged) {
+    activeLyrics = null;
+  }
   lyricsLine.value = "Loading synced lyrics...";
 
   if (lyricsCache.has(trackKey)) {
@@ -445,33 +555,69 @@ const refreshLyricsForTrack = async () => {
     return;
   }
 
-  const fetchId = ++activeFetchId;
-  const parsedLyrics = await fetchSyncedLyrics(player);
-
-  if (fetchId !== activeFetchId || trackKey !== activeTrackKey) {
+  if (trackKey === activeFetchTrackKey && activeFetchPromise) {
+    await activeFetchPromise;
     return;
   }
 
-  activeLyrics = parsedLyrics;
-  lyricsCache.set(trackKey, parsedLyrics);
-  lyricsLine.value = parsedLyrics.length
-    ? (findLyricLine(parsedLyrics, await fetchPlayerctlPositionMs(player)) || "...")
-    : "No synced lyrics found.";
+  const fetchId = ++activeFetchId;
+  activeFetchTrackKey = trackKey;
+  activeFetchPromise = (async () => {
+    try {
+      const parsedLyrics = await fetchSyncedLyrics(player);
+
+      if (fetchId !== activeFetchId || trackKey !== activeTrackKey) {
+        return;
+      }
+
+      activeLyrics = parsedLyrics;
+      lyricsCache.set(trackKey, parsedLyrics);
+      lyricsLine.value = parsedLyrics.length
+        ? (findLyricLine(parsedLyrics, await fetchPlayerctlPositionMs(player)) || "...")
+        : "No synced lyrics found.";
+    } catch (error) {
+      if (fetchId === activeFetchId && trackKey === activeTrackKey) {
+        activeLyrics = [];
+        lyricsLine.value = "No synced lyrics found.";
+      }
+      print("lyrics fetch failed", error);
+    } finally {
+      if (fetchId === activeFetchId && trackKey === activeFetchTrackKey) {
+        activeFetchTrackKey = null;
+        activeFetchPromise = null;
+      }
+    }
+  })();
+
+  await activeFetchPromise;
+};
+
+const scheduleRefreshLyrics = (delayMs = 0) => {
+  const requestId = ++refreshRequestId;
+
+  Utils.timeout(delayMs, () => {
+    if (requestId !== refreshRequestId || !isLyricsVisible()) {
+      return;
+    }
+
+    refreshLyricsForTrack().catch((error) => {
+      print("lyrics refresh failed", error);
+    });
+  });
 };
 
 const syncCurrentLyric = async () => {
-  const player = await getActivePlayerSnapshot();
+  if (!isLyricsVisible()) {
+    return;
+  }
+
+  const player = activePlayer;
   if (!player || !activeTrackKey) {
     await refreshLyricsForTrack();
     return;
   }
 
   if (!activeLyrics?.length) {
-    await refreshLyricsForTrack();
-    return;
-  }
-
-  if (buildTrackKey(player) !== activeTrackKey) {
     await refreshLyricsForTrack();
     return;
   }
@@ -483,26 +629,64 @@ const syncCurrentLyric = async () => {
 
   const positionMs = await fetchPlayerctlPositionMs(player);
 
-  const nextLine = findLyricLine(activeLyrics, positionMs);
+  const nextLine = findLyricLine(activeLyrics, positionMs + LYRICS_LOOKAHEAD_MS);
   lyricsLine.value = nextLine || (playbackStatus === "Paused" ? lyricsLine.value : "...");
 };
 
 const startSyncLoop = () => {
-  if (syncLoopStarted) {
+  if (syncLoopRunning) {
     return;
   }
 
-  syncLoopStarted = true;
+  syncLoopRunning = true;
 
   const tick = () => {
+    if (!syncLoopRunning) {
+      return;
+    }
+
     Promise.resolve(syncCurrentLyric()).catch((error) => {
       print("lyrics sync failed", error);
     }).finally(() => {
-      Utils.timeout(LYRICS_SYNC_INTERVAL, tick);
+      if (syncLoopRunning) {
+        Utils.timeout(LYRICS_SYNC_INTERVAL, tick);
+      }
     });
   };
 
   Utils.timeout(LYRICS_SYNC_INTERVAL, tick);
+};
+
+const stopSyncLoop = () => {
+  syncLoopRunning = false;
+};
+
+const startActivePlayerPoll = () => {
+  if (playerPollRunning) {
+    return;
+  }
+
+  playerPollRunning = true;
+
+  const tick = () => {
+    if (!playerPollRunning) {
+      return;
+    }
+
+    if (isLyricsVisible()) {
+      scheduleRefreshLyrics();
+    }
+
+    if (playerPollRunning) {
+      Utils.timeout(LYRICS_ACTIVE_PLAYER_POLL_INTERVAL, tick);
+    }
+  };
+
+  Utils.timeout(LYRICS_ACTIVE_PLAYER_POLL_INTERVAL, tick);
+};
+
+const stopActivePlayerPoll = () => {
+  playerPollRunning = false;
 };
 
 const lyricsWindowCss = () => `font-size: ${LYRICS_TEXT_SIZE_REM}rem;`;
@@ -537,23 +721,26 @@ App.connect("window-toggled", (_, windowName, visible) => {
   if (windowName === "lyrics") {
     lyricsWindowVisible.value = visible;
     if (visible) {
-      refreshLyricsForTrack().catch((error) => {
-        print("lyrics window refresh failed", error);
-      });
+      startSyncLoop();
+      startActivePlayerPoll();
+      scheduleRefreshLyrics();
+    } else {
+      stopSyncLoop();
+      stopActivePlayerPoll();
+      activePlayer = null;
+      activeTrackKey = null;
+      activeLyrics = null;
+      activeFetchTrackKey = null;
+      activeFetchPromise = null;
     }
   }
 });
 
 Mpris.connect("changed", () => {
-  refreshLyricsForTrack().catch((error) => {
-    print("lyrics refresh failed", error);
-  });
+  if (isLyricsVisible()) {
+    scheduleRefreshLyrics(MPRIS_REFRESH_DEBOUNCE_MS);
+  }
 });
-
-refreshLyricsForTrack().catch((error) => {
-  print("lyrics initial refresh failed", error);
-});
-startSyncLoop();
 
 export const LyricsWindow = () => Window({
   name: "lyrics",
@@ -623,3 +810,15 @@ export const LyricsWindow = () => Window({
     }),
   }),
 });
+
+dark.connect("changed", () => Utils.timeout(100, () => {
+  App.resetCss();
+  App.applyCss(css);
+}));
+
+export default {
+  style: css,
+  windows: [
+    LyricsWindow(),
+  ],
+};

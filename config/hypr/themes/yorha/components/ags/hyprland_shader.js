@@ -33,12 +33,14 @@ export const start_hyprland_shader_sync = (
   openWindowRuntimePath = "",
   openWindowAnimation = "scanline",
   openWindowAnimationDurationScale = 1,
+  openWindowAnimationFollowWindow = true,
 ) => {
   let hyprlandEventStream = null;
   let animationLoopRunning = false;
   let activeWindowAnimations = [];
   let cachedOpenWindowTemplate = "";
   let cachedMonitors = null;
+  let lastRenderedShader = "";
 
   const selectedOpenWindowEffect = OPEN_WINDOW_EFFECTS[openWindowAnimation]
     ? openWindowAnimation
@@ -92,6 +94,7 @@ export const start_hyprland_shader_sync = (
 
     try {
       const activeWindow = JSON.parse(await execAsync(["hyprctl", "-j", "activewindow"]));
+      lastRenderedShader = "";
       await applyScreenShader(isTrueFullscreen(activeWindow) ? "" : screenShaderPath);
     } catch (error) {
       print(error);
@@ -110,22 +113,27 @@ export const start_hyprland_shader_sync = (
       }
 
       const now = Date.now();
-      const clients = JSON.parse(await execAsync(["hyprctl", "-j", "clients"]));
-      const monitors = await getCachedMonitors();
-      if (!monitors) {
-        return;
-      }
-      const clientsByAddress = new Map(clients.map((client) => [
-        normalizeWindowAddress(client?.address),
-        client,
-      ]));
-
+      const shouldFollowWindow = Boolean(openWindowAnimationFollowWindow);
+      const monitors = shouldFollowWindow
+        ? await getCachedMonitors()
+        : null;
+      const clientsByAddress = shouldFollowWindow && monitors
+        ? new Map(
+          JSON.parse(await execAsync(["hyprctl", "-j", "clients"])).map((client) => [
+            normalizeWindowAddress(client?.address),
+            client,
+          ]),
+        )
+        : null;
       const renderableAnimations = activeWindowAnimations
         .map((animation) => {
           const effect = OPEN_WINDOW_EFFECTS[animation.effectId];
           const elapsed = now - animation.startedAt;
-          const linearProgress = Math.min(1, Math.max(0, elapsed / (effect.durationMs * durationScale)));
-          const client = clientsByAddress.get(animation.address) ?? null;
+          const linearProgress = Math.min(
+            1,
+            Math.max(0, elapsed / (effect.durationMs * durationScale)),
+          );
+          const client = clientsByAddress?.get(animation.address) ?? null;
           const nextBox = client && shouldAnimateWindow(client)
             ? normalizeWindowBoxFromState(client, monitors) ?? animation.box
             : animation.box;
@@ -147,6 +155,11 @@ export const start_hyprland_shader_sync = (
       }
 
       const shader = buildOpenWindowShader(template, activeWindowAnimations);
+      if (shader === lastRenderedShader) {
+        return;
+      }
+
+      lastRenderedShader = shader;
       await Utils.writeFile(shader, openWindowRuntimePath);
       await applyScreenShader(openWindowRuntimePath);
     } catch (error) {

@@ -27,6 +27,55 @@ const normalizeSearch = (value) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 
+const tokenizeSearch = (value) =>
+  normalizeSearch(value)
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+const getSearchRank = (item, query) => {
+  const terms = tokenizeSearch(query);
+  if (terms.length === 0) {
+    return 0;
+  }
+
+  const normalizedName = normalizeSearch(item?.name || "");
+  const normalizedUser = normalizeSearch(item?.user || "");
+  const allTermsPresent = terms.every(
+    (term) => normalizedName.includes(term) || normalizedUser.includes(term)
+  );
+
+  if (!allTermsPresent) {
+    return null;
+  }
+
+  const nameMatches = terms.filter((term) => normalizedName.includes(term)).length;
+  const userMatches = terms.filter((term) => normalizedUser.includes(term)).length;
+  const allInName = nameMatches === terms.length;
+  const startsInName = terms.some((term) => normalizedName.startsWith(term));
+
+  return [
+    allInName ? 1 : 0,
+    startsInName ? 1 : 0,
+    nameMatches,
+    -userMatches,
+    -(normalizedName.length || normalizedUser.length || 0),
+  ];
+};
+
+const compareSearchRanks = (leftRank, rightRank) => {
+  const length = Math.max(leftRank.length, rightRank.length);
+  for (let index = 0; index < length; index += 1) {
+    const leftValue = leftRank[index] ?? 0;
+    const rightValue = rightRank[index] ?? 0;
+    if (leftValue !== rightValue) {
+      return rightValue - leftValue;
+    }
+  }
+
+  return 0;
+};
+
 const state = {
   entryWidget: null,
   resultGroup: null,
@@ -369,11 +418,19 @@ const renderResults = (
   { preserveSelectionKey = null, preserveVisibleCount = false, preserveScroll = false } = {}
 ) => {
   state.currentQuery = query;
-  const normalized = normalizeSearch(query.trim());
-  state.filteredItems = normalized
-    ? state.currentItems.filter((item) =>
-        normalizeSearch(`${item.name} ${item.user}`).includes(normalized)
+  state.filteredItems = query.trim()
+    ? state.currentItems
+      .map((item) => ({
+        item,
+        rank: getSearchRank(item, query),
+      }))
+      .filter(({ rank }) => rank !== null)
+      .sort((left, right) =>
+        compareSearchRanks(left.rank, right.rank)
+        || left.item.name.localeCompare(right.item.name)
+        || left.item.user.localeCompare(right.item.user)
       )
+      .map(({ item }) => item)
     : state.currentItems;
 
   state.visibleResultCount = preserveVisibleCount

@@ -6,8 +6,8 @@
       "lastUpdated": 1773683813575
     },
     "librewolf.desktop": {
-      "score": 18.80102775345275,
-      "lastUpdated": 1773710864810
+      "score": 20.747303877888342,
+      "lastUpdated": 1774003861441
     },
     "nemo.desktop": {
       "score": 18.106553341565405,
@@ -18,16 +18,16 @@
       "lastUpdated": 1773194605043
     },
     "steam.desktop": {
-      "score": 5.9517949405565505,
-      "lastUpdated": 1773621251876
+      "score": 5.251797791399659,
+      "lastUpdated": 1774208212496
     },
     "org.strawberrymusicplayer.strawberry.desktop": {
-      "score": 18.111596396745956,
-      "lastUpdated": 1773686535334
+      "score": 18.640019840616894,
+      "lastUpdated": 1773942571337
     },
     "code.desktop": {
-      "score": 19.041032131029215,
-      "lastUpdated": 1773711797019
+      "score": 18.676997577965796,
+      "lastUpdated": 1773942548122
     },
     "org.gnome.Nautilus.desktop": {
       "score": 9.725193204661894,
@@ -50,8 +50,16 @@
       "lastUpdated": 1773576983785
     },
     "nheko.desktop": {
-      "score": 1,
-      "lastUpdated": 1773306129128
+      "score": 2.6677383021428893,
+      "lastUpdated": 1774009825536
+    },
+    "Phasmophobia.desktop": {
+      "score": 2.8312838050616964,
+      "lastUpdated": 1774481509197
+    },
+    "net.lutris.Lutris.desktop": {
+      "score": 1.999990417125694,
+      "lastUpdated": 1774376616284
     }
   }
 }

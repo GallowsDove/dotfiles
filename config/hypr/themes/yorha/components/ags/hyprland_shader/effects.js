@@ -1,5 +1,23 @@
 export const MAX_ACTIVE_OPEN_WINDOW_ANIMATIONS = 4;
-export const OPEN_WINDOW_ANIMATION_STEPS = 90;
+export const OPEN_WINDOW_ANIMATION_STEPS = 48;
+
+const quantizeProgress = (progress, stepCount = 0) => {
+  if (!Number.isFinite(progress) || stepCount <= 0) {
+    return progress;
+  }
+
+  return Math.round(progress * stepCount) / stepCount;
+};
+
+const buildWindowDeclarations = ({ box, progress }, index, progressStepCount = 0) => {
+  const shaderProgress = quantizeProgress(progress, progressStepCount);
+
+  return [
+    `const vec2 windowMin${index} = vec2(${box.minX.toFixed(6)}, ${box.minY.toFixed(6)});`,
+    `const vec2 windowMax${index} = vec2(${box.maxX.toFixed(6)}, ${box.maxY.toFixed(6)});`,
+    `const float progress${index} = ${shaderProgress.toFixed(6)};`,
+  ].join("\n");
+};
 
 const createDirectionalSettingsBurst = (direction) => {
   const isVertical = direction === "top" || direction === "bottom";
@@ -39,12 +57,13 @@ const createDirectionalSettingsBurst = (direction) => {
 
   return {
     durationMs: 150,
+    shaderProgressStepCount: 18,
     easeBezier: [0.0, 0.0, 1.0, 1.0],
-    buildDeclarations: ({ box, progress }, index) => ([
-      `const vec2 windowMin${index} = vec2(${box.minX.toFixed(6)}, ${box.minY.toFixed(6)});`,
-      `const vec2 windowMax${index} = vec2(${box.maxX.toFixed(6)}, ${box.maxY.toFixed(6)});`,
-      `const float progress${index} = ${progress.toFixed(6)};`,
-    ].join("\n")),
+    buildDeclarations: (animation, index) => buildWindowDeclarations(
+      animation,
+      index,
+      18,
+    ),
     buildLogic: (index) => ([
       "{",
       `    vec2 windowMinPx = windowMin${index} * fullSize;`,
@@ -155,12 +174,13 @@ const createDirectionalSettingsBurst = (direction) => {
 
 const createCenterSettingsBurst = ({ vertical = false, reverse = false } = {}) => ({
   durationMs: 1000,
+  shaderProgressStepCount: 24,
   easeBezier: [0.0, 0.0, 1.0, 1.0],
-  buildDeclarations: ({ box, progress }, index) => ([
-    `const vec2 windowMin${index} = vec2(${box.minX.toFixed(6)}, ${box.minY.toFixed(6)});`,
-    `const vec2 windowMax${index} = vec2(${box.maxX.toFixed(6)}, ${box.maxY.toFixed(6)});`,
-    `const float progress${index} = ${progress.toFixed(6)};`,
-  ].join("\n")),
+  buildDeclarations: (animation, index) => buildWindowDeclarations(
+    animation,
+    index,
+    24,
+  ),
   buildLogic: (index) => ([
     "{",
     `    vec2 windowMinPx = windowMin${index} * fullSize;`,
@@ -303,12 +323,13 @@ const createCenterSettingsBurst = ({ vertical = false, reverse = false } = {}) =
 
 const createRadialCenterSettingsBurst = ({ reverse = false } = {}) => ({
   durationMs: 600,
+  shaderProgressStepCount: 24,
   easeBezier: [0.0, 0.0, 1.0, 1.0],
-  buildDeclarations: ({ box, progress }, index) => ([
-    `const vec2 windowMin${index} = vec2(${box.minX.toFixed(6)}, ${box.minY.toFixed(6)});`,
-    `const vec2 windowMax${index} = vec2(${box.maxX.toFixed(6)}, ${box.maxY.toFixed(6)});`,
-    `const float progress${index} = ${progress.toFixed(6)};`,
-  ].join("\n")),
+  buildDeclarations: (animation, index) => buildWindowDeclarations(
+    animation,
+    index,
+    24,
+  ),
   buildLogic: (index) => ([
     "{",
     `    vec2 windowMinPx = windowMin${index} * fullSize;`,
@@ -344,111 +365,119 @@ const createRadialCenterSettingsBurst = ({ reverse = false } = {}) => ({
     "            max(length(vec2((cornerA.x - gridCenter.x), (cornerA.y - gridCenter.y) * radialScaleY)), length(vec2((cornerB.x - gridCenter.x), (cornerB.y - gridCenter.y) * radialScaleY))),",
     "            max(length(vec2((cornerC.x - gridCenter.x), (cornerC.y - gridCenter.y) * radialScaleY)), length(vec2((cornerD.x - gridCenter.x), (cornerD.y - gridCenter.y) * radialScaleY)))",
     "        );",
+    "        float sweepProgress = progress" + index + " * (maxSweepRadius + 5.0);",
+    "        vec2 centeredLocalCell = vec2((burstLocalPx.x - gridCenterPoint.x) / (triangleSide * 0.5), (burstLocalPx.y - gridCenterPoint.y) / triangleHeight);",
+    "        float pixelRadialDistance = length(vec2(centeredLocalCell.x, centeredLocalCell.y * radialScaleY));",
+    reverse
+      ? "        float activeSweepCenter = maxSweepRadius - sweepProgress;"
+      : "        float activeSweepCenter = sweepProgress;",
+    "        float activeBandPadding = 6.0;",
     "        float intensity = 0.0;",
-    "        for (int offsetY = -1; offsetY <= 1; offsetY++) {",
-    "            for (int offsetX = -1; offsetX <= 1; offsetX++) {",
-    "                ivec2 cell = baseCell + ivec2(offsetX, offsetY);",
-    "                if (cell.x < 0 || cell.y < 0) {",
-    "                    continue;",
-    "                }",
-    "                if (float(cell.x) > triangleColumnCount - 1.0 || float(cell.y) > triangleRowCount - 1.0) {",
-    "                    continue;",
-    "                }",
-    "                vec2 centerPoint = vec2(gridOffsetX + float(cell.x) * triangleSide * 0.5, gridOffsetY + float(cell.y) * triangleHeight);",
-    "                bool inverted = mod(float(cell.x), 2.0) < 0.5",
-    "                    ? mod(float(cell.y), 2.0) > 0.5",
-    "                    : mod(float(cell.y), 2.0) < 0.5;",
-    "                vec2 leftPoint = inverted",
-    "                    ? vec2(centerPoint.x - triangleSide * 0.5, centerPoint.y + triangleHeight * 0.5)",
-    "                    : vec2(centerPoint.x - triangleSide * 0.5, centerPoint.y - triangleHeight * 0.5);",
-    "                vec2 rightPoint = inverted",
-    "                    ? vec2(centerPoint.x + triangleSide * 0.5, centerPoint.y + triangleHeight * 0.5)",
-    "                    : vec2(centerPoint.x + triangleSide * 0.5, centerPoint.y - triangleHeight * 0.5);",
-    "                vec2 yPoint = inverted",
-    "                    ? vec2(centerPoint.x, centerPoint.y - triangleHeight * 0.5)",
-    "                    : vec2(centerPoint.x, centerPoint.y + triangleHeight * 0.5);",
-    "                vec2 centeredCell = vec2(float(cell.x), float(cell.y)) - gridCenter;",
-    "                float radialDistance = length(vec2(centeredCell.x, centeredCell.y * radialScaleY));",
-    "                float sweepProgress = progress" + index + " * (maxSweepRadius + 5.0);",
+    "        if (pixelRadialDistance >= activeSweepCenter - activeBandPadding && pixelRadialDistance <= activeSweepCenter + activeBandPadding) {",
+    "            for (int offsetY = -1; offsetY <= 1; offsetY++) {",
+    "                for (int offsetX = -1; offsetX <= 1; offsetX++) {",
+    "                    ivec2 cell = baseCell + ivec2(offsetX, offsetY);",
+    "                    if (cell.x < 0 || cell.y < 0) {",
+    "                        continue;",
+    "                    }",
+    "                    if (float(cell.x) > triangleColumnCount - 1.0 || float(cell.y) > triangleRowCount - 1.0) {",
+    "                        continue;",
+    "                    }",
+    "                    vec2 centerPoint = vec2(gridOffsetX + float(cell.x) * triangleSide * 0.5, gridOffsetY + float(cell.y) * triangleHeight);",
+    "                    bool inverted = mod(float(cell.x), 2.0) < 0.5",
+    "                        ? mod(float(cell.y), 2.0) > 0.5",
+    "                        : mod(float(cell.y), 2.0) < 0.5;",
+    "                    vec2 leftPoint = inverted",
+    "                        ? vec2(centerPoint.x - triangleSide * 0.5, centerPoint.y + triangleHeight * 0.5)",
+    "                        : vec2(centerPoint.x - triangleSide * 0.5, centerPoint.y - triangleHeight * 0.5);",
+    "                    vec2 rightPoint = inverted",
+    "                        ? vec2(centerPoint.x + triangleSide * 0.5, centerPoint.y + triangleHeight * 0.5)",
+    "                        : vec2(centerPoint.x + triangleSide * 0.5, centerPoint.y - triangleHeight * 0.5);",
+    "                    vec2 yPoint = inverted",
+    "                        ? vec2(centerPoint.x, centerPoint.y - triangleHeight * 0.5)",
+    "                        : vec2(centerPoint.x, centerPoint.y + triangleHeight * 0.5);",
+    "                    vec2 centeredCell = vec2(float(cell.x), float(cell.y)) - gridCenter;",
+    "                    float radialDistance = length(vec2(centeredCell.x, centeredCell.y * radialScaleY));",
     reverse
-      ? "                float trianglePhase = sweepProgress - (maxSweepRadius - radialDistance);"
-      : "                float trianglePhase = sweepProgress - radialDistance;",
-    "                if (trianglePhase <= 0.0 || trianglePhase >= 5.0) {",
-    "                    continue;",
-    "                }",
-    "                float holdPhase = trianglePhase >= 1.0 && trianglePhase < 4.0 ? 1.0 : 0.0;",
-    "                float enterPhase = clamp(trianglePhase, 0.0, 1.0);",
-    "                float exitPhase = clamp(trianglePhase - 4.0, 0.0, 1.0);",
-    "                vec2 radialUnit = radialDistance > 0.0001",
-    "                    ? centeredCell / radialDistance",
-    "                    : vec2(1.0, 0.0);",
-    "                vec2 innerCell = vec2(float(cell.x), float(cell.y)) - radialUnit;",
-    "                vec2 outerCell = vec2(float(cell.x), float(cell.y)) + radialUnit;",
-    "                float innerDistance = length(vec2(innerCell.x - gridCenter.x, (innerCell.y - gridCenter.y) * radialScaleY));",
-    "                float outerDistance = length(vec2(outerCell.x - gridCenter.x, (outerCell.y - gridCenter.y) * radialScaleY));",
+      ? "                    float trianglePhase = sweepProgress - (maxSweepRadius - radialDistance);"
+      : "                    float trianglePhase = sweepProgress - radialDistance;",
+    "                    if (trianglePhase <= 0.0 || trianglePhase >= 5.0) {",
+    "                        continue;",
+    "                    }",
+    "                    float holdPhase = trianglePhase >= 1.0 && trianglePhase < 4.0 ? 1.0 : 0.0;",
+    "                    float enterPhase = clamp(trianglePhase, 0.0, 1.0);",
+    "                    float exitPhase = clamp(trianglePhase - 4.0, 0.0, 1.0);",
+    "                    vec2 radialUnit = radialDistance > 0.0001",
+    "                        ? centeredCell / radialDistance",
+    "                        : vec2(1.0, 0.0);",
+    "                    vec2 innerCell = vec2(float(cell.x), float(cell.y)) - radialUnit;",
+    "                    vec2 outerCell = vec2(float(cell.x), float(cell.y)) + radialUnit;",
+    "                    float innerDistance = length(vec2(innerCell.x - gridCenter.x, (innerCell.y - gridCenter.y) * radialScaleY));",
+    "                    float outerDistance = length(vec2(outerCell.x - gridCenter.x, (outerCell.y - gridCenter.y) * radialScaleY));",
     reverse
-      ? "                float innerNeighborPhase = sweepProgress - (maxSweepRadius - innerDistance);"
-      : "                float innerNeighborPhase = sweepProgress - innerDistance;",
+      ? "                    float innerNeighborPhase = sweepProgress - (maxSweepRadius - innerDistance);"
+      : "                    float innerNeighborPhase = sweepProgress - innerDistance;",
     reverse
-      ? "                float outerNeighborPhase = sweepProgress - (maxSweepRadius - outerDistance);"
-      : "                float outerNeighborPhase = sweepProgress - outerDistance;",
-    "                bool innerNeighborActive = innerDistance >= 0.0 && innerNeighborPhase > 0.0 && innerNeighborPhase < 5.0;",
-    "                bool outerNeighborActive = outerCell.x >= 0.0 && outerCell.x <= lastColumnIndex && outerCell.y >= 0.0 && outerCell.y <= lastRowIndex && outerNeighborPhase > 0.0 && outerNeighborPhase < 5.0;",
-    "                bool fadeOnly = innerNeighborActive == outerNeighborActive;",
-    "                float visibility = min(enterPhase, 1.0 - exitPhase);",
-    "                vec2 radialDirection = centerPoint - gridCenterPoint;",
-    "                float radialDirectionLength = length(radialDirection);",
-    "                radialDirection = radialDirectionLength > 0.0001 ? radialDirection / radialDirectionLength : vec2(1.0, 0.0);",
-    "                float leftScore = dot(leftPoint - centerPoint, radialDirection);",
-    "                float rightScore = dot(rightPoint - centerPoint, radialDirection);",
-    "                float yScore = dot(yPoint - centerPoint, radialDirection);",
-    "                float outerScore = max(leftScore, max(rightScore, yScore));",
-    "                float innerScore = min(leftScore, min(rightScore, yScore));",
-    "                bool leftIsOuter = leftScore >= outerScore - 0.001;",
-    "                bool rightIsOuter = rightScore >= outerScore - 0.001;",
-    "                bool yIsOuter = yScore >= outerScore - 0.001;",
-    "                bool leftIsInner = leftScore <= innerScore + 0.001;",
-    "                bool rightIsInner = rightScore <= innerScore + 0.001;",
-    "                bool yIsInner = yScore <= innerScore + 0.001;",
+      ? "                    float outerNeighborPhase = sweepProgress - (maxSweepRadius - outerDistance);"
+      : "                    float outerNeighborPhase = sweepProgress - outerDistance;",
+    "                    bool innerNeighborActive = innerDistance >= 0.0 && innerNeighborPhase > 0.0 && innerNeighborPhase < 5.0;",
+    "                    bool outerNeighborActive = outerCell.x >= 0.0 && outerCell.x <= lastColumnIndex && outerCell.y >= 0.0 && outerCell.y <= lastRowIndex && outerNeighborPhase > 0.0 && outerNeighborPhase < 5.0;",
+    "                    bool fadeOnly = innerNeighborActive == outerNeighborActive;",
+    "                    float visibility = min(enterPhase, 1.0 - exitPhase);",
+    "                    vec2 radialDirection = centerPoint - gridCenterPoint;",
+    "                    float radialDirectionLength = length(radialDirection);",
+    "                    radialDirection = radialDirectionLength > 0.0001 ? radialDirection / radialDirectionLength : vec2(1.0, 0.0);",
+    "                    float leftScore = dot(leftPoint - centerPoint, radialDirection);",
+    "                    float rightScore = dot(rightPoint - centerPoint, radialDirection);",
+    "                    float yScore = dot(yPoint - centerPoint, radialDirection);",
+    "                    float outerScore = max(leftScore, max(rightScore, yScore));",
+    "                    float innerScore = min(leftScore, min(rightScore, yScore));",
+    "                    bool leftIsOuter = leftScore >= outerScore - 0.001;",
+    "                    bool rightIsOuter = rightScore >= outerScore - 0.001;",
+    "                    bool yIsOuter = yScore >= outerScore - 0.001;",
+    "                    bool leftIsInner = leftScore <= innerScore + 0.001;",
+    "                    bool rightIsInner = rightScore <= innerScore + 0.001;",
+    "                    bool yIsInner = yScore <= innerScore + 0.001;",
     reverse
-      ? "                float leftRatio = leftIsInner ? enterPhase : (leftIsOuter ? (1.0 - exitPhase) : 1.0);"
-      : "                float leftRatio = leftIsInner ? (1.0 - exitPhase) : (leftIsOuter ? enterPhase : 1.0);",
+      ? "                    float leftRatio = leftIsInner ? enterPhase : (leftIsOuter ? (1.0 - exitPhase) : 1.0);"
+      : "                    float leftRatio = leftIsInner ? (1.0 - exitPhase) : (leftIsOuter ? enterPhase : 1.0);",
     reverse
-      ? "                float rightRatio = rightIsInner ? enterPhase : (rightIsOuter ? (1.0 - exitPhase) : 1.0);"
-      : "                float rightRatio = rightIsInner ? (1.0 - exitPhase) : (rightIsOuter ? enterPhase : 1.0);",
+      ? "                    float rightRatio = rightIsInner ? enterPhase : (rightIsOuter ? (1.0 - exitPhase) : 1.0);"
+      : "                    float rightRatio = rightIsInner ? (1.0 - exitPhase) : (rightIsOuter ? enterPhase : 1.0);",
     reverse
-      ? "                float yRatio = yIsInner ? enterPhase : (yIsOuter ? (1.0 - exitPhase) : 1.0);"
-      : "                float yRatio = yIsInner ? (1.0 - exitPhase) : (yIsOuter ? enterPhase : 1.0);",
-    "                if (!fadeOnly && (leftRatio <= 0.001 || rightRatio <= 0.001 || yRatio <= 0.001)) {",
-    "                    continue;",
-    "                }",
-    "                vec2 currentLeft = leftPoint;",
-    "                vec2 currentRight = rightPoint;",
-    "                vec2 currentY = yPoint;",
-    "                if (!fadeOnly && leftRatio < 0.9) {",
-    "                    vec2 leftRightVector = (currentRight - currentLeft) * (1.0 - leftRatio);",
-    "                    vec2 leftYVector = (currentY - currentLeft) * (1.0 - leftRatio);",
-    "                    currentLeft = currentLeft + leftRightVector * 0.5 + leftYVector * 0.5;",
-    "                }",
-    "                if (!fadeOnly && rightRatio < 0.9) {",
-    "                    vec2 rightLeftVector = (currentLeft - currentRight) * (1.0 - rightRatio);",
-    "                    vec2 rightYVector = (currentY - currentRight) * (1.0 - rightRatio);",
-    "                    currentRight = currentRight + rightLeftVector * 0.5 + rightYVector * 0.5;",
-    "                }",
-    "                if (!fadeOnly && yRatio < 0.9) {",
-    "                    vec2 yLeftVector = (currentLeft - currentY) * (1.0 - yRatio);",
-    "                    vec2 yRightVector = (currentRight - currentY) * (1.0 - yRatio);",
-    "                    currentY = currentY + yLeftVector * 0.5 + yRightVector * 0.5;",
-    "                }",
-    "                vec2 triangleCentroid = (currentLeft + currentRight + currentY) / 3.0;",
-    "                float gapPixels = 3.0;",
-    "                currentLeft = mix(currentLeft, triangleCentroid, gapPixels / triangleSide);",
-    "                currentRight = mix(currentRight, triangleCentroid, gapPixels / triangleSide);",
-    "                currentY = mix(currentY, triangleCentroid, gapPixels / triangleSide);",
-    "                if (point_in_triangle(localPx, currentLeft, currentRight, currentY)) {",
-    `                    float fade = 1.0 - smoothstep(0.88, 1.0, progress${index});`,
-    "                    float triangleAlpha = fadeOnly ? visibility : max(0.65, holdPhase);",
-    "                    intensity = max(intensity, (0.26 + 0.34 * fade) * triangleAlpha);",
+      ? "                    float yRatio = yIsInner ? enterPhase : (yIsOuter ? (1.0 - exitPhase) : 1.0);"
+      : "                    float yRatio = yIsInner ? (1.0 - exitPhase) : (yIsOuter ? enterPhase : 1.0);",
+    "                    if (!fadeOnly && (leftRatio <= 0.001 || rightRatio <= 0.001 || yRatio <= 0.001)) {",
+    "                        continue;",
+    "                    }",
+    "                    vec2 currentLeft = leftPoint;",
+    "                    vec2 currentRight = rightPoint;",
+    "                    vec2 currentY = yPoint;",
+    "                    if (!fadeOnly && leftRatio < 0.9) {",
+    "                        vec2 leftRightVector = (currentRight - currentLeft) * (1.0 - leftRatio);",
+    "                        vec2 leftYVector = (currentY - currentLeft) * (1.0 - leftRatio);",
+    "                        currentLeft = currentLeft + leftRightVector * 0.5 + leftYVector * 0.5;",
+    "                    }",
+    "                    if (!fadeOnly && rightRatio < 0.9) {",
+    "                        vec2 rightLeftVector = (currentLeft - currentRight) * (1.0 - rightRatio);",
+    "                        vec2 rightYVector = (currentY - currentRight) * (1.0 - rightRatio);",
+    "                        currentRight = currentRight + rightLeftVector * 0.5 + rightYVector * 0.5;",
+    "                    }",
+    "                    if (!fadeOnly && yRatio < 0.9) {",
+    "                        vec2 yLeftVector = (currentLeft - currentY) * (1.0 - yRatio);",
+    "                        vec2 yRightVector = (currentRight - currentY) * (1.0 - yRatio);",
+    "                        currentY = currentY + yLeftVector * 0.5 + yRightVector * 0.5;",
+    "                    }",
+    "                    vec2 triangleCentroid = (currentLeft + currentRight + currentY) / 3.0;",
+    "                    float gapPixels = 3.0;",
+    "                    currentLeft = mix(currentLeft, triangleCentroid, gapPixels / triangleSide);",
+    "                    currentRight = mix(currentRight, triangleCentroid, gapPixels / triangleSide);",
+    "                    currentY = mix(currentY, triangleCentroid, gapPixels / triangleSide);",
+    "                    if (point_in_triangle(localPx, currentLeft, currentRight, currentY)) {",
+    `                        float fade = 1.0 - smoothstep(0.88, 1.0, progress${index});`,
+    "                        float triangleAlpha = fadeOnly ? visibility : max(0.65, holdPhase);",
+    "                        intensity = max(intensity, (0.26 + 0.34 * fade) * triangleAlpha);",
+    "                    }",
     "                }",
     "            }",
     "        }",
@@ -463,12 +492,13 @@ const createRadialCenterSettingsBurst = ({ reverse = false } = {}) => ({
 
 const createScanlineEffect = () => ({
   durationMs: 500,
+  shaderProgressStepCount: 24,
   easeBezier: [0.54, 0.02, 0.36, 0.98],
-  buildDeclarations: ({ box, progress }, index) => ([
-    `const vec2 windowMin${index} = vec2(${box.minX.toFixed(6)}, ${box.minY.toFixed(6)});`,
-    `const vec2 windowMax${index} = vec2(${box.maxX.toFixed(6)}, ${box.maxY.toFixed(6)});`,
-    `const float progress${index} = ${progress.toFixed(6)};`,
-  ].join("\n")),
+  buildDeclarations: (animation, index) => buildWindowDeclarations(
+    animation,
+    index,
+    24,
+  ),
   buildLogic: (index) => ([
     "{",
     `    vec2 windowMinPx = windowMin${index} * fullSize;`,

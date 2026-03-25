@@ -26,8 +26,10 @@ globalThis.WHICH = WHICH;
 
 let top_bar_height = 0;
 let bottom_bar_height = 0;
-const OPEN_WINDOW_ANIMATION = "settings_burst_center_radial";
+let last_reserved_signature = "";
+const OPEN_WINDOW_ANIMATION = "none";
 const OPEN_WINDOW_ANIMATION_DURATION_SCALE = 1;
+const OPEN_WINDOW_ANIMATION_FOLLOW_WINDOW = true;
 const screen_shader_path = `${themedir}/components/gridlines.frag`;
 const open_window_scanline_template_path = OPEN_WINDOW_ANIMATION !== "none"
   ? `${themedir}/components/window_open_scanline.frag`
@@ -41,12 +43,29 @@ start_hyprland_shader_sync(
   open_window_scanline_runtime_path,
   OPEN_WINDOW_ANIMATION,
   OPEN_WINDOW_ANIMATION_DURATION_SCALE,
+  OPEN_WINDOW_ANIMATION_FOLLOW_WINDOW,
 );
 
-const apply_reserved = () =>
-  execAsync(
+const apply_reserved = () => {
+  const signature = `${top_bar_height}:${bottom_bar_height}`;
+  if (signature === last_reserved_signature) {
+    return Promise.resolve();
+  }
+
+  last_reserved_signature = signature;
+  return execAsync(
     `hyprctl keyword monitor ,addreserved,${top_bar_height},${bottom_bar_height},0,0`
-  ).then(print).catch(print);
+  ).catch((error) => {
+    last_reserved_signature = "";
+    print(error);
+  });
+};
+
+const schedule_reserved_refresh = (delays = [0, 250, 1000]) => {
+  delays.forEach((delay) => {
+    Utils.timeout(delay, () => apply_reserved());
+  });
+};
 
 
 const top = () =>
@@ -99,12 +118,9 @@ const top = () =>
         classNames: ["under-workspaces"],
       }),
     ],
-    setup: (box) => Utils.timeout(1000,async() => {
+    setup: (box) => Utils.timeout(1000, () => {
       top_bar_height = box.get_allocation().height + 10;
-      while (true) { // in a loop becauses if hyprland config is changed, it resets the reserved space
-        apply_reserved();
-        await new Promise((r) => Utils.timeout(5000,r));
-      }
+      schedule_reserved_refresh();
     }),
   });
 
@@ -125,6 +141,7 @@ const Bar = ({ monitor } = {}) => {
 };
 
 execAsync(`agsv1 -b player -c ${App.configDir}/windows/player/player.js`);
+execAsync(`agsv1 -b lyrics -c ${App.configDir}/windows/player/lyrics.js`);
 execAsync(`agsv1 -b settings -c ${App.configDir}/windows/settings/settings.js`);
 execAsync(`agsv1 -b bg_bitwarden -c ${App.configDir}/windows/bitwarden/bitwardenbg.js`);
 execAsync(`agsv1 -b bitwarden -c ${App.configDir}/windows/bitwarden/bitwarden.js`);
@@ -143,6 +160,7 @@ dark.connect("changed", () => {
   });
 
   execAsync(`agsv1 -b player -r dark.value=${dark.value}`).then(print);
+  execAsync(`agsv1 -b lyrics -r dark.value=${dark.value}`).then(print);
   execAsync(`agsv1 -b notify -r dark.value=${dark.value}`).then(print);
   execAsync(`agsv1 -b settings -r dark.value=${dark.value}`).then(print);
   execAsync(`agsv1 -b bitwarden -r dark.value=${dark.value}`).then(print);
@@ -156,9 +174,7 @@ dark.connect("changed", () => {
   Utils.writeFile(hyprconf,`${themedir}/theme.conf`).then(()=>{
     print("reloaded hypr")
   }).catch((e) => print("error",e));
-  Utils.timeout(1000,() => {
-    apply_reserved();
-  })
+  schedule_reserved_refresh([250, 1000, 2000]);
 }) 
 
 execAsync(["bash","-c",`pkill dunst;agsv1 -b notify -c ${App.configDir}/windows/notifications/notifications.js`])
@@ -178,7 +194,7 @@ const BottomBar = ({ monitor } = {}) =>
       setup: (self) =>
         Utils.timeout(1000, () => {
           bottom_bar_height = self.get_allocation().height + 12;
-          apply_reserved();
+          schedule_reserved_refresh();
         }),
     }),
   });
